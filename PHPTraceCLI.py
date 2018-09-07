@@ -10,11 +10,13 @@ class PHPTraceAnalyser(cmd.Cmd):
     """Interactive interface for analysing PHP traces"""
 
     intro = "Analyse php traces, run `setup` for installation instructions, or run `introduction` to get started"
+    ruler = ""
 
     def __init__(self, args):
         """Initialize the cli-loop"""
         super().__init__()
         self.args = args
+
         self.trace = PHPTrace.Trace(args.trace)
 
     def do_setup(self, line):
@@ -58,6 +60,9 @@ display_call_tree is interesting""")
         """Display a simple indented call-tree"""
         PHPTraceAnalysis.display_call_tree(self.trace)
 
+    def do_display_all_functions(self, line):
+        """Display all called functions"""
+        PHPTraceAnalysis.display_all_functions(self.trace)
 
 
 parser = argparse.ArgumentParser(description="Dig up some useful info from trace files")
@@ -65,5 +70,10 @@ parser.add_argument('trace', type=str, help="trace filename")
 
 args = parser.parse_args()
 
+
 if __name__ == '__main__':
-    PHPTraceAnalyser(args).cmdloop()
+    import sys
+    if len(sys.argv) > 1:
+        PHPTraceAnalyser().onecmd(' '.join(sys.argv[2:]))
+    else:
+        PHPTraceAnalyser(args).cmdloop()
