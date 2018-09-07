@@ -1,0 +1,9 @@
+# keep empty directories
+!.gitkeep
+
+# Python-related cache files
+__pycache__/
+*.pyc
+
+# Sublime text
+*.sublime-workspace
