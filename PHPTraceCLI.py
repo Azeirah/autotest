@@ -1,15 +1,16 @@
 #!/usr/bin/python3
 
 import argparse
-import PHPTrace
+import PHPTraceTokenizer
 import cmd
-import PHPTraceAnalysis
+import PHPTraceParser
+import sys
 
 
 class PHPTraceAnalyser(cmd.Cmd):
     """Interactive interface for analysing PHP traces"""
 
-    intro = "Analyse php traces, run `setup` for installation instructions, or run `introduction` to get started"
+    intro = "Analyse php traces, run `setup` for installation instructions, or run `introduction` to get started\notherwise; run `help` to list all supported commands."
     ruler = ""
 
     def __init__(self, args):
@@ -17,7 +18,15 @@ class PHPTraceAnalyser(cmd.Cmd):
         super().__init__()
         self.args = args
 
-        self.trace = PHPTrace.Trace(args.trace)
+        self.trace = PHPTraceTokenizer.Trace(args.trace)
+
+    def do_exit(self, line):
+        """Exit the cli"""
+        sys.exit()
+
+    def do_quit(self, line):
+        """Exit the cli"""
+        sys.exit()
 
     def do_setup(self, line):
         """Shows instructions on how to set-up and install tracing"""
@@ -50,30 +59,72 @@ Run do_introduction next for help on running the php analyser
         """Shows an introduction to this CLI"""
 
         print("""Todo, there isn't much to this CLI for now, only
-display_call_tree is interesting""")
+call_tree is interesting""")
 
     def do_show_file(self, line):
         """Prints the loaded file"""
         print(args.trace)
 
-    def do_display_call_tree(self, line):
+    def do_call_tree(self, line):
         """Display a simple indented call-tree"""
-        PHPTraceAnalysis.display_call_tree(self.trace)
+        PHPTraceParser.call_tree(self.trace)
 
-    def do_display_all_functions(self, line):
-        """Display all called functions"""
-        PHPTraceAnalysis.display_all_functions(self.trace)
+    def do_function_names(self, line):
+        """Display the names of all functions"""
+        functions = PHPTraceParser.function_names(self.trace)
+        print("\n".join([fn[0] for fn in functions]))
+
+    def do_function_calls(self, line):
+        """Display all function calls along with their respective
+        parameters and return values"""
+
+        calls = PHPTraceParser.function_calls(self.trace)
+
+        print("\n".join([
+            "{name}({params}) -> {ret}".format(
+                name=call['name'],
+                params=call['parameters'],
+                ret=call['return']
+            )
+            for call in calls
+        ]))
+
+    def do_grouped_function_calls(self, line):
+
+        calls = PHPTraceParser.grouped_function_calls(self.trace)
+
+        for name, calls in calls.items():
+            print(name)
+            print("-" * len(name))
+
+            for call in calls:
+                retval = call['return']
+                parameters = call['parameters']
+
+                if not parameters:
+                    parameters = '{{arity-0}}'
+
+                if not retval:
+                    retval = '{{void}}'
+
+                formatted_call = "{params:40}->\t{ret}".format(
+                    params=parameters,
+                    ret=retval
+                )
+
+                print(formatted_call)
+
+            print("\n")
 
 
-parser = argparse.ArgumentParser(description="Dig up some useful info from trace files")
+parser = argparse.ArgumentParser(description="Dig up wonderful info from trace files")
 parser.add_argument('trace', type=str, help="trace filename")
 
 args = parser.parse_args()
 
 
 if __name__ == '__main__':
-    import sys
-    if len(sys.argv) > 1:
-        PHPTraceAnalyser().onecmd(' '.join(sys.argv[2:]))
+    if len(sys.argv) > 2:
+        PHPTraceAnalyser(args).onecmd(' '.join(sys.argv[2:]))
     else:
         PHPTraceAnalyser(args).cmdloop()
