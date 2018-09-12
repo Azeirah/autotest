@@ -1,6 +1,6 @@
 """Functions to analyse parsed PHP traces with."""
 from pprint import pprint
-
+from collections import namedtuple
 
 def filter_entry(node):
     """Filters on nodes of type entry"""
@@ -89,9 +89,11 @@ def grouped_function_calls(trace):
 
 
 def filenames(trace):
-    files = set()
+    files = []
 
     for field, i in trace.visit(lambda f: filter_entry(f)):
-        files.update((str(field.filename), ))
+        name = str(field.filename)
+        if name not in files:
+            files.append(name)
 
     return files
