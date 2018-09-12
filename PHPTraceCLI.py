@@ -5,6 +5,7 @@ import PHPTraceTokenizer
 import cmd
 import PHPTraceParser
 import sys
+import os.path
 
 
 class PHPTraceAnalyser(cmd.Cmd):
@@ -64,6 +65,15 @@ call_tree is interesting""")
     def do_show_file(self, line):
         """Prints the loaded file"""
         print(args.trace)
+
+    def do_show_filenames(self, line):
+        """Prints all files that were run during this trace"""
+        paths = list(PHPTraceParser.filenames(self.trace))
+        prefix = os.path.commonprefix(paths)
+        print("There are {n} paths, and they're all found under {p}".format(n=len(paths),p=prefix))
+
+        for file in paths:
+            print(file.replace(prefix, ""))
 
     def do_call_tree(self, line):
         """Display a simple indented call-tree"""

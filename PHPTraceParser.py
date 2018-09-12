@@ -86,3 +86,12 @@ def grouped_function_calls(trace):
     calls['{main}'][0]['return'] = ''
 
     return calls
+
+
+def filenames(trace):
+    files = set()
+
+    for field, i in trace.visit(lambda f: filter_entry(f)):
+        files.update((str(field.filename), ))
+
+    return files

@@ -5,6 +5,7 @@ Needs the following configuration in php.ini
 [xdebug]
 # set either this or xdebug trace trigger
 xdebug.auto_trace=1
+
 xdebug.collect_params=3
 xdebug.trace_format=1
 xdebug.collect_return=1
