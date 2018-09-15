@@ -56,3 +56,7 @@ If it's possible to parse both the profile _and_ the trace, and then wire them t
 
 There are some obvious concerns about performance and memory usage, running _both_ a trace _and_ a profiler, but that's only a concern for the future, I'm more interested in getting it done now.
 
+## Profiling
+
+It actually worked! I wrote a very basic XDEBUG parser that parses out only the function names with their definitions.
+I added the definition file name to the `Entry` class. It's actually picking up _all_ filenames with a few runs, pretty nice..
