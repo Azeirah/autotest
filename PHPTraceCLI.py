@@ -1,18 +1,24 @@
 #!/usr/bin/python3
 
 import argparse
+import os
+
 import PHPTraceTokenizer
+import PHPProfileParser
 import cmd
 import PHPTraceParser
 import sys
 import os.path
 import re
 
+traceDir = "trace-data"
+
 
 class PHPTraceAnalyser(cmd.Cmd):
     """Interactive interface for analysing PHP traces"""
 
-    intro = "Analyse php traces, run `setup` for installation instructions, or run `introduction` to get started\notherwise; run `help` to list all supported commands."
+    intro = "Analyse php traces, run `setup` for installation instructions, or run `introduction` to get " \
+            "started\notherwise; run `help` to list all supported commands. "
     ruler = ""
 
     def __init__(self, args):
@@ -20,7 +26,17 @@ class PHPTraceAnalyser(cmd.Cmd):
         super().__init__()
         self.args = args
 
-        self.trace = PHPTraceTokenizer.Trace(args.trace)
+        if args.timestamp == 'latest':
+            files = os.listdir(traceDir)
+            timestamps = sorted([int(stamp.split(".")[0]) for stamp in files if '.x' in stamp], reverse=True)
+            args.timestamp = timestamps[0]
+            print(args.timestamp)
+
+        tracefile = os.path.join(traceDir, "{}.xt".format(args.timestamp))
+        profileFile = os.path.join(traceDir, "{}.xp".format(args.timestamp))
+
+        function_mappings = PHPProfileParser.get_function_file_mapping(profileFile)
+        self.trace = PHPTraceTokenizer.Trace(tracefile, function_mappings)
 
     def do_exit(self, line):
         """Exit the cli"""
@@ -46,12 +62,21 @@ zend_extension=/usr/lib/php/20151012/xdebug.so
 [xdebug]
 xdebug.auto_trace=1
 xdebug.collect_params=3
+xdebug.trace_output_dir=/home/mb/Documents/autotest/trace-data/
 xdebug.trace_format=1
 xdebug.collect_return=1
-xdebug.trace_output_name={set an appropriate directory}
+xdebug.trace_output_name="%t"
+
+xdebug.profiler_enable=1
+xdebug.profiler_output_dir=/home/mb/Documents/autotest/trace-data/
+xdebug.profiler_output_name="%t.xp"
 
 You can find additional info on xdebug configuration parameters here
 https://xdebug.org/docs/all_settings
+
+Note that all the above parameters are required for this program to run properly
+There might be some parameter configurations that will work fine as well, don't change
+the default parameters unless you have some time to waste.
 
 After you've finished configuring php, you can get started analysing.
 Run do_introduction next for help on running the php analyser
@@ -62,10 +87,6 @@ Run do_introduction next for help on running the php analyser
 
         print("""Todo, there isn't much to this CLI for now, only
 call_tree is interesting""")
-
-    def do_show_file(self, line):
-        """Prints the loaded file"""
-        print(args.trace)
 
     def do_show_filenames(self, line):
         """Prints all files that were run during this trace
@@ -106,7 +127,6 @@ call_tree is interesting""")
         ]))
 
     def do_grouped_function_calls(self, line):
-
         calls = PHPTraceParser.grouped_function_calls(self.trace)
 
         for name, calls in calls.items():
@@ -134,13 +154,38 @@ call_tree is interesting""")
 
 
 parser = argparse.ArgumentParser(description="Dig up wonderful info from trace files")
-parser.add_argument('trace', type=str, help="trace filename")
-
+parser.add_argument('timestamp', type=str, nargs="?", help="Timestamp of a trace and profile, input 'latest' to pick "
+                                                           "the most recent one")
+parser.add_argument('--list', dest="list", action="store_true", help="List all potential traces")
 args = parser.parse_args()
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 2:
-        PHPTraceAnalyser(args).onecmd(' '.join(sys.argv[2:]))
-    else:
-        PHPTraceAnalyser(args).cmdloop()
+    if not args.timestamp and not args.list:
+        print("Required argument timestamp missing")
+        sys.exit()
+
+    if args.list:
+        files = os.listdir(traceDir)
+        timestamps = set()
+
+        traceRex = re.compile("\d+\.x[pt]")
+
+        for file in files:
+            if traceRex.match(file):
+                timestamps.update((file.split(".")[0], ))
+
+        for timestamp in timestamps:
+            if "{}.xt".format(timestamp) in files and \
+                    "{}.xp".format(timestamp) in files:
+                print(timestamp)
+
+        print(len(timestamps))
+
+        if len(timestamps) > 2:
+            print("latest")
+        else:
+            print("No profile and trace recordings found.")
+        sys.exit()
+
+    PHPTraceAnalyser(args).cmdloop()

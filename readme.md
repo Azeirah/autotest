@@ -21,19 +21,20 @@ The dockerfile is not meant to run this application with (although it might in t
 To get started, you need to install xdebug and configure your php.ini
 
 ```
-[PHP]
-...
 # configure your extension, path is liiikely different
-# note that the `pecl install xdebug` step shows
-# you the right path
 zend_extension=/usr/lib/php/20151012/xdebug.so
 
 [xdebug]
 xdebug.auto_trace=1
 xdebug.collect_params=3
+xdebug.trace_output_dir=/home/mb/Documents/autotest/trace-data/
 xdebug.trace_format=1
 xdebug.collect_return=1
-xdebug.trace_output_name={set an appropriate directory}
+xdebug.trace_output_name="%t"
+
+xdebug.profiler_enable=1
+xdebug.profiler_output_dir=/home/mb/Documents/autotest/trace-data/
+xdebug.profiler_output_name="%t.xp"
 ```
 
 You can find additional info on xdebug configuration parameters [here](https://xdebug.org/docs/all_settings)

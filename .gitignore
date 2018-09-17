@@ -7,3 +7,6 @@ __pycache__/
 
 # Sublime text
 *.sublime-workspace
+
+# function call databases
+*.db
