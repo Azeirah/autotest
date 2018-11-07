@@ -27,6 +27,7 @@ class PHPProfilerParser:
 
         self.fnRegex = re.compile("^fn=\((?P<num>\d+)\)( (php::)?(?P<fn>.+))?$")
         self.flRegex = re.compile("^fl=\((?P<num>\d+)\)( (?P<fl>.+))?$")
+        self.fnflRegex = re.compile("^f[nl]=f[nl]=\((?P<num>\d+)\)")
 
         self.files = {}
         self.functions = {}
@@ -50,6 +51,13 @@ class PHPProfilerParser:
         if line == '\n':
             # blank line
             self.context = Function()
+
+        if line.startswith("fn=fl") or line.startswith("fl=fl"):
+            fnfl = self.fnflRegex.match(line)
+            num = fnfl.group('num')
+            self.context.fl = num
+
+            return False
 
         if line.startswith("fl"):
             fl = self.flRegex.match(line)

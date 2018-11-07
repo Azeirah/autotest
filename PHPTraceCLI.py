@@ -11,8 +11,7 @@ import sys
 import os.path
 import re
 
-traceDir = "trace-data"
-
+from settings import *
 
 class PHPTraceAnalyser(cmd.Cmd):
     """Interactive interface for analysing PHP traces"""
@@ -180,9 +179,7 @@ if __name__ == '__main__':
                     "{}.xp".format(timestamp) in files:
                 print(timestamp)
 
-        print(len(timestamps))
-
-        if len(timestamps) > 2:
+        if len(timestamps) >= 1:
             print("latest")
         else:
             print("No profile and trace recordings found.")
