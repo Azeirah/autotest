@@ -49,7 +49,7 @@ def trace_and_profile_from_timestamp(traceDir, timestamp):
 
 def create_trace(traceFile, profileFile):
     function_mappings = PHPProfileParser.get_function_file_mapping(profileFile)
-    return PHPTraceTokenizer.Trace(tracefile, function_mappings)
+    return PHPTraceTokenizer.Trace(traceFile, function_mappings)
 
 
 if __name__ == '__main__':

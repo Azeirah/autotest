@@ -26,7 +26,7 @@ class PHPProfilerParser:
         self.currentParsingSection = "metadata"
 
         self.fnRegex = re.compile("^fn=\((?P<num>\d+)\)( (php::)?(?P<fn>.+))?$")
-        self.flRegex = re.compile("^fl=\((?P<num>\d+)\)( (?P<fl>.+))?$")
+        self.flRegex = re.compile("^fl=\((?P<num>\d+)\)( (?P<fl>.+))?")
         self.fnflRegex = re.compile("^f[nl]=f[nl]=\((?P<num>\d+)\)")
 
         self.files = {}
@@ -52,7 +52,7 @@ class PHPProfilerParser:
             # blank line
             self.context = Function()
 
-        if line.startswith("fn=fl") or line.startswith("fl=fl"):
+        if line.startswith("fn=fl") or line.startswith("fl=fl") or line.startswith('fn=fn') or line.startswith('fl=fn'):
             fnfl = self.fnflRegex.match(line)
             num = fnfl.group('num')
             self.context.fl = num
