@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 """
-Given a parsed PHP trace (PHPTrace.py@Trace)
+Given a parsed PHP trace (PHPTraceParser.py@Trace)
 This file will parse all function calls, with their parameters and their respective return values.
 """
 
@@ -13,36 +13,21 @@ import PHPTraceParser
 import PHPTraceTokenizer
 import PHPProfileParser
 
-from settings import *
+from settings import traceDir
 
 
 parser = argparse.ArgumentParser(description="Add function-call-parameters to a database")
 parser.add_argument('timestamp', type=str, help="trace timestamp")
-args = parser.parse_args()
-
-
-tracefile = os.path.join(traceDir, "{}.xt".format(args.timestamp))
-profileFile = os.path.join(traceDir, "{}.xp".format(args.timestamp))
-
-function_mappings = PHPProfileParser.get_function_file_mapping(profileFile)
-trace = PHPTraceTokenizer.Trace(tracefile, function_mappings)
+parser.add_argument('-d', '--db', nargs="?", dest="db", type=str, default="function-calls.db", help="name of the sqlite3 .db file")
 
 def set_up_db(db_name):
-    conn = sqlite3.connect(db_name)
-    c = conn.cursor()
-    with open('schema.sql') as f:
-        c.execute(f.read())
-    conn.commit()
-    conn.close()
+    with sqlite3.connect(db_name) as conn:
+        c = conn.cursor()
+        with open('schema.sql') as f:
+            c.executescript(f.read())
+        conn.commit()
 
-if __name__ == '__main__':
-    db_name = 'function-calls.db'
-
-    if not os.path.exists(db_name):
-        set_up_db(db_name)
-
-    conn = sqlite3.connect(db_name)
-
+def insert_trace(trace, conn):
     c = conn.cursor()
     calls = PHPTraceParser.grouped_function_calls(trace)
 
@@ -55,4 +40,27 @@ if __name__ == '__main__':
             )
 
     conn.commit()
-    conn.close()
+
+def trace_and_profile_from_timestamp(traceDir, timestamp):
+    return (
+        os.path.join(traceDir, "{}.xt".format(args.timestamp)),
+        os.path.join(traceDir, "{}.xp".format(args.timestamp))
+    )
+
+def create_trace(profileFile, function_mappings):
+    function_mappings = PHPProfileParser.get_function_file_mapping(profileFile)
+    return PHPTraceTokenizer.Trace(tracefile, function_mappings)
+
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+    db_name = args.db
+
+    if not os.path.exists(db_name):
+        set_up_db(db_name)
+
+    traceFile, profileFile = trace_and_profile_from_timestamp(traceDir, args.timestamp)
+    trace = create_trace(traceFile)
+
+    with sqlite3.connect(db_name) as conn:
+        insert_trace(trace, conn)
