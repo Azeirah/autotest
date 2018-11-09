@@ -47,7 +47,7 @@ def trace_and_profile_from_timestamp(traceDir, timestamp):
         os.path.join(traceDir, "{}.xp".format(args.timestamp))
     )
 
-def create_trace(profileFile, function_mappings):
+def create_trace(traceFile, profileFile):
     function_mappings = PHPProfileParser.get_function_file_mapping(profileFile)
     return PHPTraceTokenizer.Trace(tracefile, function_mappings)
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
         set_up_db(db_name)
 
     traceFile, profileFile = trace_and_profile_from_timestamp(traceDir, args.timestamp)
-    trace = create_trace(traceFile)
+    trace = create_trace(traceFile, profileFile)
 
     with sqlite3.connect(db_name) as conn:
         insert_trace(trace, conn)
