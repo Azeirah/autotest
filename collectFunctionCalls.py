@@ -27,6 +27,16 @@ def set_up_db(db_name):
             c.executescript(f.read())
         conn.commit()
 
+def timestamp_exists(timestamp, conn):
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM `traces` WHERE `timestamp`=?", (timestamp,))
+    return c.fetchone()[0] >= 1
+
+def insert_timestamp(timestamp, conn):
+    c = conn.cursor()
+    c.execute("INSERT INTO `traces` VALUES (?);", (timestamp,))
+    conn.commit()
+
 def insert_trace(trace, conn):
     c = conn.cursor()
     calls = PHPTraceParser.grouped_function_calls(trace)
@@ -43,8 +53,8 @@ def insert_trace(trace, conn):
 
 def trace_and_profile_from_timestamp(traceDir, timestamp):
     return (
-        os.path.join(traceDir, "{}.xt".format(args.timestamp)),
-        os.path.join(traceDir, "{}.xp".format(args.timestamp))
+        os.path.join(traceDir, "{}.xt".format(timestamp)),
+        os.path.join(traceDir, "{}.xp".format(timestamp))
     )
 
 def create_trace(traceFile, profileFile):
@@ -55,12 +65,16 @@ def create_trace(traceFile, profileFile):
 if __name__ == '__main__':
     args = parser.parse_args()
     db_name = args.db
+    timestamp = args.timestamp
 
     if not os.path.exists(db_name):
         set_up_db(db_name)
 
-    traceFile, profileFile = trace_and_profile_from_timestamp(traceDir, args.timestamp)
-    trace = create_trace(traceFile, profileFile)
-
     with sqlite3.connect(db_name) as conn:
-        insert_trace(trace, conn)
+        if not timestamp_exists(timestamp, conn):
+            traceFile, profileFile = trace_and_profile_from_timestamp(traceDir, args.timestamp)
+            trace = create_trace(traceFile, profileFile)
+            insert_trace(trace, conn)
+            insert_timestamp(timestamp, conn)
+        else:
+            print("This timestamp has already been processed!")
