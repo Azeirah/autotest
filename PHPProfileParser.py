@@ -39,7 +39,7 @@ class PHPProfilerParser:
 
 
     def consume_line(self):
-        line = self.file.readline()
+        line = self.file.readline().replace("\x00", "")
         # print(line)
         # metadata contains ":"
         if self.currentParsingSection == "metadata" and (":" in line or len(line) == 1):
