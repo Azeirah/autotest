@@ -50,3 +50,11 @@ python3 PHPTraceCLI.py <tracefile>
 ```
 
 This is a simple command-line-interface to introspect php trace files. Like the entire project, it's a WIP, but it supports some useful functionality. The tool itself is documented well enough so you can run it and it will explain itself.
+
+### TODO
+
+* Organize test-cases for the trace and profile parser
+* Add a convenient way to automatically turn capturing on and off with one accessible command
+* Work on reducing database size
+  * Minimize filename redunancy by creating a `files` table
+  * (I know that db size is _very_ optimizable, standard zipping takes from 3.2GB to 140MB, 7z ultra from 3.2GB to _43MB_, compression ratio of 74x!)
