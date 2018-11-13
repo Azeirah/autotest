@@ -85,10 +85,12 @@ def insert_timestamp_in_db(conn, timestamp, autoRemove=False):
         insert_timestamp(timestamp, conn)
         elapsed_time = time.time() - start_time
         print("Took {} milliseconds to process timestamp --{}--".format(timestamp))
-        remove_trace_and_profile_data(traceFile, profileFile)
+        if autoRemove:
+            remove_trace_and_profile_data(traceFile, profileFile)
     else:
         print("This timestamp has already been processed!")
-        remove_trace_and_profile_data(traceFile, profileFile)
+        if autoRemove:
+            remove_trace_and_profile_data(traceFile, profileFile)
 
 if __name__ == '__main__':
     args = parser.parse_args()
