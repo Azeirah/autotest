@@ -84,7 +84,7 @@ def insert_timestamp_in_db(conn, timestamp, autoRemove=False):
         insert_trace(trace, conn)
         insert_timestamp(timestamp, conn)
         elapsed_time = time.time() - start_time
-        print("Took {} milliseconds to process timestamp --{}--".format(timestamp))
+        print("Took {:.0f} seconds to process timestamp --{}--".format(elapsed_time, timestamp))
         if autoRemove:
             remove_trace_and_profile_data(traceFile, profileFile)
     else:
