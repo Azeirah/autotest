@@ -30,11 +30,11 @@ xdebug.collect_params=3
 xdebug.trace_output_dir=/home/mb/Documents/autotest/trace-data/
 xdebug.trace_format=1
 xdebug.collect_return=1
-xdebug.trace_output_name="%t"
+xdebug.trace_output_name="%t%R"
 
 xdebug.profiler_enable=1
 xdebug.profiler_output_dir=/home/mb/Documents/autotest/trace-data/
-xdebug.profiler_output_name="%t.xp"
+xdebug.profiler_output_name="%t%R.xp"
 ```
 
 You can find additional info on xdebug configuration parameters [here](https://xdebug.org/docs/all_settings)

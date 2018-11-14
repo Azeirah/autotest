@@ -48,31 +48,36 @@ class PHPProfilerParser:
         else:
             self.currentParsingSection = "body"
 
-        if line == '\n':
-            # blank line
-            self.context = Function()
+        try:
+            if line == '\n':
+                # blank line
+                self.context = Function()
 
-        if line.startswith("fn=fl") or line.startswith("fl=fl") or line.startswith('fn=fn') or line.startswith('fl=fn'):
-            fnfl = self.fnflRegex.match(line)
-            num = fnfl.group('num')
-            self.context.fl = num
+            if line.startswith("fn=fl") or line.startswith("fl=fl") or line.startswith('fn=fn') or line.startswith('fl=fn'):
+                fnfl = self.fnflRegex.match(line)
+                num = fnfl.group('num')
+                self.context.fl = num
 
-            return False
+                return False
 
-        if line.startswith("fl"):
-            fl = self.flRegex.match(line)
-            filename = fl.group('fl')
-            num = fl.group('num')
-            if filename:
-                self.files[num] = filename
-            self.context.fl = num
+            if line.startswith("fl"):
+                fl = self.flRegex.match(line)
+                filename = fl.group('fl')
+                num = fl.group('num')
+                if filename:
+                    self.files[num] = filename
+                self.context.fl = num
 
-        if line.startswith("fn"):
-            fn = self.fnRegex.match(line)
-            func = fn.group('fn')
-            num = fn.group('num')
-            if func:
-                self.functions[num] = (func, self.files[self.context.fl])
+            if line.startswith("fn"):
+                fn = self.fnRegex.match(line)
+                func = fn.group('fn')
+                num = fn.group('num')
+                if func:
+                    self.functions[num] = (func, self.files[self.context.fl])
+        except Exception as e:
+            print("Something went wrong while parsing the following line:")
+            print(line)
+            raise e
 
         return "{main}" in line
 

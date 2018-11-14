@@ -34,7 +34,7 @@ def set_up_db(db_name):
 
 def timestamp_exists(timestamp, conn):
     c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM `traces` WHERE `timestamp`=?", (timestamp,))
+    c.execute("SELECT COUNT(*) FROM `traces` WHERE `requestname`=?", (timestamp,))
     return c.fetchone()[0] >= 1
 
 def insert_timestamp(timestamp, conn):
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     if args.autoImport:
         files = [file.replace(".xp", "").replace(".xt", "") for file in os.listdir(traceDir) if file.endswith("xp") or file.endswith("xt")]
         for timestamp, count in Counter(files).items():
-            if count == 2 and re.match(r"\d+", timestamp):
+            if count == 2 and re.match(r"^\d+", timestamp):
                 print("Found timestamp --{}--".format(timestamp))
                 with sqlite3.connect(db_name) as conn:
                     try:
