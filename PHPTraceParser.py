@@ -97,8 +97,12 @@ def grouped_function_calls(trace):
 
             _currentCall['return'] = retval
 
-    # main is recorded as a function call
-    calls['{main}'][0]['return'] = ''
+    try:
+        # main is recorded as a function call
+        calls['{main}'][0]['return'] = ''
+    except KeyError:
+        # traces for exceptions don't have a main call
+        pass
 
     return calls
 

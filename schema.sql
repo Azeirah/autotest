@@ -2,13 +2,14 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE function_calls
 (
-    `name` TEXT,
+    `name` INTEGER,
     `params` TEXT,
     `returnval` TEXT,
     `calling_filename` INTEGER,
     `definition_filename` INTEGER,
     `linenum` INTEGER,
 
+    FOREIGN KEY(`name`) REFERENCES `function_names`(`rowid`),
     FOREIGN KEY(`calling_filename`) REFERENCES `file_names`(`rowid`),
     FOREIGN KEY(`definition_filename`) REFERENCES `file_names`(`rowid`)
 );

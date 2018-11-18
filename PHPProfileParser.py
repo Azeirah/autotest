@@ -15,9 +15,8 @@ class Function:
 
 
 class PHPProfilerParser:
-    def __init__(self, filename):
-        self.filename = filename
-        self.file = open(filename)
+    def __init__(self):
+        self.file = None
 
         # None before starting
         # "metadata" while parsing metadata
@@ -25,7 +24,7 @@ class PHPProfilerParser:
         # "body" while parsing the actual profiling data
         self.currentParsingSection = "metadata"
 
-        self.fnRegex = re.compile("^fn=\((?P<num>\d+)\)( (php::)?(?P<fn>.+))?$")
+        self.fnRegex = re.compile("^fn=\((?P<num>\d+)\)( (php::)?(?P<fn>.+))?")
         self.flRegex = re.compile("^fl=\((?P<num>\d+)\)( (?P<fl>.+))?")
         self.fnflRegex = re.compile("^f[nl]=f[nl]=\((?P<num>\d+)\)")
 
@@ -33,14 +32,16 @@ class PHPProfilerParser:
         self.functions = {}
 
 
-    def parse(self):
+    def parse(self, filename):
+        self.file = open(filename)
+        self.currentParsingSection = "metadata"
         while not self.consume_line():
             pass
+        self.file.close()
 
 
     def consume_line(self):
         line = self.file.readline().replace("\x00", "")
-        # print(line)
         # metadata contains ":"
         if self.currentParsingSection == "metadata" and (":" in line or len(line) == 1):
             # noop for metadata, don't really care about it for our use-case
@@ -79,13 +80,14 @@ class PHPProfilerParser:
             print(line)
             raise e
 
-        return "{main}" in line
+        return "{main}" in line or not line
 
 
-def get_function_file_mapping(filename):
-    parser = PHPProfilerParser(filename)
+def get_function_file_mapping(filenames):
+    parser = PHPProfilerParser()
 
-    parser.parse()
+    for filename in filenames:
+        parser.parse(filename)
 
     mapping = {
         "require": "php::internal",
