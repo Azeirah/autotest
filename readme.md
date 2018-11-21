@@ -37,6 +37,12 @@ xdebug.profiler_output_dir=/home/mb/Documents/autotest/trace-data/
 xdebug.profiler_output_name="%u %U.xp"
 ```
 
+In addition to your php.ini you also need to activate the apache module `mod_unique` in httpd.conf
+
+```
+LoadModule unique_id_module modules/mod_unique_id.so
+```
+
 You can find additional info on xdebug configuration parameters [here](https://xdebug.org/docs/all_settings)
 
 ### Generating tracefiles
@@ -58,3 +64,10 @@ This is a simple command-line-interface to introspect php trace files. Like the 
 * Work on reducing database size
   * Minimize filename redunancy by creating a `files` table
   * (I know that db size is _very_ optimizable, standard zipping takes from 3.2GB to 140MB, 7z ultra from 3.2GB to _43MB_, compression ratio of 74x!)
+* Parsing is very slow
+  * Parallelize?
+  * Automatically parse in the background with a daemon/service?
+  * Speed up parsing bij offloading that in Rust/C++?
+* Normalize parameters
+  * Add a `params` or even `values` table
+  * 1-to-many for `function_call` to `params`
