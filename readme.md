@@ -10,7 +10,7 @@ This is a work-in-progress, but these are the most interesting starting points:
 
 * A recent version of PHP
 * xdebug
-* python3
+* python3 64-bit (64-bit is _important_! This application can run into memory issues without using Python 64-bit, be careful.)
 * sqlite3
 
 See the dockerfile for approximate dependencies.
