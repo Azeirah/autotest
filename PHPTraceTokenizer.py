@@ -46,7 +46,7 @@ class Entry(Field):
         """Line number where the function definition starts"""
         self.params = fields[11:]
         """All parameters of the function"""
-        self.definition_filename = function_mappings.get(fields[5], "missing file")
+        self.definition_filename = function_mappings.get(Path(fields[5]), "{{missing file}}")
         """Where the called function is defined"""
 
 
