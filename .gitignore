@@ -10,3 +10,5 @@ __pycache__/
 
 # function call databases
 *.db
+
+trace-data/
