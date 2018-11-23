@@ -76,6 +76,31 @@ def request_exists(request, conn):
     c.execute("SELECT COUNT(*) FROM `traces` WHERE `requestname`=?", (request,))
     return c.fetchone()[0] >= 1
 
+def insert_parameters(parameters, conn):
+    param_ids = []
+    for parameter in parameters:
+        param_ids += insert_parameter(parameter, conn)
+
+def insert_parameter(parameter, conn):
+    c = conn.cursor()
+
+    args = {
+        'value': parameter
+    }
+
+    c.execute("SELECT `rowid` FROM `invocation_parameters` WHERE `value`=:value", args)
+    rowid = c.fetchone()
+
+    try:
+        return rowid[0]
+    except TypeError:
+        c.execute("""
+            INSERT INTO `invocation_parameters` VALUES (:value)
+        """, args)
+
+        return c.lastrowid
+
+
 def insert_request(request, conn):
     c = conn.cursor()
     timestamp = datetime.datetime.today().isoformat()
@@ -140,7 +165,7 @@ def insert_trace(trace, conn):
 
             c.execute("""
                 INSERT INTO
-                    `function_calls`
+                    `function_invocations`
                     (`name`, `params`, `returnval`, `calling_filename`, `definition_filename`, `linenum`)
                 VALUES
                     (:name, :params, :returnval, :calling_filename, :definition_filename, :linenum)

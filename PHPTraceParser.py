@@ -49,7 +49,7 @@ def function_calls(trace):
         if filter_entry(field):
             _currentCall = {
                 'name': get_fn_name(field.function_name),
-                'parameters': ", ".join(field.params).replace('\n', ''),
+                'parameters': field.params,
             }
             stack.append(_currentCall)
             calls.append(_currentCall)
@@ -69,14 +69,9 @@ def grouped_function_calls(trace):
     stack = []
     for field, i in trace.visit(lambda f: filter_entry(f) or filter_return(f)):
         if filter_entry(field):
-            parameters = ", ".join(field.params).replace('\n', '')
-
-            if not parameters:
-                parameters = '{{arity-0}}'
-
             _currentCall = {
                 'name': get_fn_name(field.function_name),
-                'parameters': parameters,
+                'parameters': field.params,
                 'calling_filename': str(field.filename),
                 'definition_filename': str(field.definition_filename),
                 'line_number': field.line_number
