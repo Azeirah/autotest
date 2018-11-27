@@ -65,8 +65,9 @@ def parse_request_filename(filename):
     return False
 
 def set_up_db(db_name):
-    with sqlite3.connect(db_name) as conn:
+    with sqlite3.connect(db_name, isolation_level=None) as conn:
         c = conn.cursor()
+        c.execute("BEGIN")
         with open('schema.sql') as f:
             c.executescript(f.read())
         conn.commit()
@@ -120,6 +121,7 @@ def insert_value(value, conn):
 
 def insert_request(request, conn):
     c = conn.cursor()
+    c.execute("BEGIN")
     timestamp = datetime.datetime.today().isoformat()
     c.execute("INSERT INTO `traces` (`requestname`, `timestamp`) VALUES (:requestname, :timestamp);", {'requestname': request, 'timestamp': timestamp})
     conn.commit()
@@ -170,6 +172,7 @@ def insert_function_name(function_name, conn):
 
 def insert_trace(trace, conn):
     c = conn.cursor()
+    c.execute("BEGIN")
     calls = PHPTraceParser.grouped_function_calls(trace)
 
     for name, calls in calls.items():
@@ -282,7 +285,7 @@ if __name__ == '__main__':
         set_up_db(db_name)
 
     if args.request:
-        with sqlite3.connect(db_name) as conn:
+        with sqlite3.connect(db_name, isolation_level=None) as conn:
             insert_request_in_db(conn, args.request, args.autoRemove)
 
     if args.autoImport:
@@ -290,7 +293,7 @@ if __name__ == '__main__':
 
         for uid in requests:
             print("Found request --{}--".format(uid))
-            with sqlite3.connect(db_name) as conn:
+            with sqlite3.connect(db_name, isolation_level=None) as conn:
                 try:
                     insert_request_in_db(conn, requests, uid, args.autoRemove)
                 except Exception as e:
@@ -301,7 +304,7 @@ if __name__ == '__main__':
         # for request, count in Counter(files).items():
         #     if count == 2 and re.match(r"^\d+", request):
         #         print("Found request --{}--".format(request))
-        #         with sqlite3.connect(db_name) as conn:
+        #         with sqlite3.connect(db, isolation_level=None_name) as conn:
         #             try:
         #                 insert_request_in_db(conn, request, args.autoRemove)
         #             except Exception as e:
