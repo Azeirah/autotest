@@ -55,7 +55,7 @@ def function_calls(trace):
             calls.append(_currentCall)
         elif filter_return(field):
             _currentCall = stack.pop()
-            _currentCall['return'] = field.return_value.replace('\n', '')
+            _currentCall['return'] = field.return_value
 
     # main is recorded as a function call
     calls[0]['return'] = ''
@@ -86,7 +86,7 @@ def grouped_function_calls(trace):
         elif filter_return(field):
             _currentCall = stack.pop()
 
-            retval = field.return_value.replace('\n', '')
+            retval = field.return_value
             if not retval:
                 retval = '{{void}}'
 

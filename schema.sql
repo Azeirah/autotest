@@ -1,7 +1,10 @@
 PRAGMA foreign_keys = ON;
+-- PRAGMA page_size = 65536;
+-- PRAGMA cache_size= 100000;
 
 CREATE TABLE `function_invocations`
 (
+    `hash` INTEGER UNIQUE,
     `name` INTEGER,
     `returnval` INTEGER,
     `calling_filename` INTEGER,
@@ -18,10 +21,10 @@ CREATE TABLE `function_invocations`
 -- of `n` parameters
 CREATE TABLE `invocation_parameters`
 (
-    `function_invocation_id` INTEGER,
+    `function_invocation_hash` TEXT,
     `value_id` INTEGER,
 
-    FOREIGN KEY(`function_invocation_id`) REFERENCES `function_invocations`(`ROWID`),
+    FOREIGN KEY(`function_invocation_hash`) REFERENCES `function_invocations`(`hash`),
     FOREIGN KEY(`value_id`) REFERENCES `values`(`ROWID`)
 );
 
@@ -31,12 +34,12 @@ CREATE TABLE `traces`
 CREATE TABLE `file_names`
 (`name` TEXT);
 CREATE UNIQUE INDEX `idx_file_names`
-ON `file_names` (`name`);
+ON `file_names`(`name`);
 
 CREATE TABLE `values`
 (`value` TEXT);
 CREATE UNIQUE INDEX `idx_values`
-ON `values` (`value`);
+ON `values`(`value`);
 
 CREATE TABLE `function_names`
 (`name` TEXT);
