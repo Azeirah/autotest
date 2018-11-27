@@ -179,6 +179,7 @@ def insert_trace(trace, conn):
             definition_filename_id = insert_filename(call['definition_filename'], conn)
             calling_filename_id = insert_filename(call['calling_filename'], conn)
             function_id = insert_function_name(name, conn)
+            returnval_id = insert_value(retval, conn)
 
             c.execute("""
                 INSERT INTO
@@ -190,7 +191,7 @@ def insert_trace(trace, conn):
                 """,
                 {
                     'name': function_id,
-                    'returnval': retval,
+                    'returnval': returnval_id,
                     'calling_filename': calling_filename_id,
                     'definition_filename': definition_filename_id,
                     'linenum': call['line_number']

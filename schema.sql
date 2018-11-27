@@ -3,14 +3,15 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE `function_invocations`
 (
     `name` INTEGER,
-    `returnval` TEXT,
+    `returnval` INTEGER,
     `calling_filename` INTEGER,
     `definition_filename` INTEGER,
     `linenum` INTEGER,
 
     FOREIGN KEY(`name`) REFERENCES `function_names`(`ROWID`),
     FOREIGN KEY(`calling_filename`) REFERENCES `file_names`(`ROWID`),
-    FOREIGN KEY(`definition_filename`) REFERENCES `file_names`(`ROWID`)
+    FOREIGN KEY(`definition_filename`) REFERENCES `file_names`(`ROWID`),
+    FOREIGN KEY(`returnval`) REFERENCES `values`(`ROWID`)
 );
 
 -- each function invocation has an associated set
