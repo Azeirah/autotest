@@ -40,3 +40,5 @@ ON `values` (`value`);
 
 CREATE TABLE `function_names`
 (`name` TEXT);
+CREATE UNIQUE INDEX `idx_function_names`
+ON `function_names`(`name`);
