@@ -30,12 +30,12 @@ CREATE TABLE `traces`
 
 CREATE TABLE `file_names`
 (`name` TEXT);
-CREATE INDEX `idx_file_names`
+CREATE UNIQUE INDEX `idx_file_names`
 ON `file_names` (`name`);
 
 CREATE TABLE `values`
 (`value` TEXT);
-CREATE INDEX `idx_values`
+CREATE UNIQUE INDEX `idx_values`
 ON `values` (`value`);
 
 CREATE TABLE `function_names`
