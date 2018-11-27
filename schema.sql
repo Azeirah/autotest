@@ -30,6 +30,8 @@ CREATE TABLE `traces`
 
 CREATE TABLE `file_names`
 (`name` TEXT);
+CREATE INDEX `idx_file_names`
+ON `file_names` (`name`);
 
 CREATE TABLE `values`
 (`value` TEXT);
