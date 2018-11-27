@@ -43,7 +43,9 @@ os.chdir(os.path.split(__file__)[0])
 schema_path = "schema.sql"
 
 def open_db_connection(db_name):
-    return sqlite3.connect(db_name)
+    conn = sqlite3.connect(db_name)
+    conn.execute("BEGIN")
+    return conn
 
 def parse_request_filename(filename):
     """Takes a filename of a file in the traces directory
@@ -84,7 +86,6 @@ def parse_request_filename(filename):
 
 def set_up_db(db_name):
     with open_db_connection(db_name) as conn:
-        conn.execute("BEGIN")
         c = conn.cursor()
         with open(schema_path) as f:
             c.executescript(f.read())
@@ -138,7 +139,6 @@ def insert_value(value, conn):
 
 
 def insert_request(request, conn):
-    conn.execute("BEGIN")
     c = conn.cursor()
     timestamp = datetime.datetime.today().isoformat()
     c.execute("INSERT INTO `traces` (`requestname`, `timestamp`) VALUES (:requestname, :timestamp);", {'requestname': request, 'timestamp': timestamp})
@@ -189,7 +189,6 @@ def insert_function_name(function_name, conn):
         return c.lastrowid
 
 def insert_trace(trace, conn):
-    conn.execute("BEGIN")
     c = conn.cursor()
     calls = PHPTraceParser.grouped_function_calls(trace)
 
