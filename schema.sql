@@ -33,6 +33,8 @@ CREATE TABLE `file_names`
 
 CREATE TABLE `values`
 (`value` TEXT);
+CREATE INDEX `idx_values`
+ON `values` (`value`);
 
 CREATE TABLE `function_names`
 (`name` TEXT);
