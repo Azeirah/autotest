@@ -44,10 +44,10 @@ class Entry(Field):
         """Whether the function is part of std-lib, or defined in php
         Beware: Is true for functions defined in external libraries"""
 
-        self.include_filename = Path(fields[7])
+        self.include_filename = fields[7]
         """If the function is require/include, this field has the value of the path included/required"""
 
-        self.filename = Path(fields[8])
+        self.filename = fields[8]
         """Filename where the function got called"""
 
         self.line_number = fields[9]
@@ -110,40 +110,3 @@ class Trace:
                     # print("parsing error")
                     # raise e
                     # missed node.. parsing error
-
-    # def listElements(self):
-    #     elements = set()
-    #     with open(self.path, encoding="utf-8", errors="ignore") as f:
-    #         for line in f.readlines():
-    #             [elements.add(r) for r in re.findall(self.re_elements, line)]
-    #     return elements
-
-    # def listFiles(self):
-    #     files = set()
-    #     with open(self.path, encoding="utf-8", errors="ignore") as f:
-    #         for line in f.readlines():
-    #             [files.add(r) for r in re.findall(self.re_phpfiles, line)]
-    #     return files
-
-# def f(field):
-#     return (
-#         field.type == "Entry"
-#         and
-#         ("callback" in field.filename.name.lower()
-#             or "outlook" in field.filename.name.lower())
-#         and field.is_function_user_defined
-#         and "Raven" not in field.function_name
-#         and "Doctrine" not in field.function_name
-#         and "Zend" not in field.function_name
-#         and "Composer" not in field.function_name
-#         and "ClassLoader" not in field.function_name
-# # and "project_103" in field.filename.name
-# # and "agenda" in field.filename.name
-# )
-#     return (
-#         field.type == "Entry"
-#         and field.is_function_user_defined
-#         and "actinum" in field.function_na):
-# me
-#         and "studiov6" not in field.filename.name
-#         )
