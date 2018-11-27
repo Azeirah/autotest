@@ -27,26 +27,36 @@ class Entry(Field):
     def __init__(self, fields, function_mappings):
         self.level = int(fields[0])
         """the stack-depth starting at 0"""
+
         self.function_num = int(fields[1])
         """Each individual function invocation gets a unique index that can be matched to its Return"""
+
         self.time_index = float(fields[3])
         """Time in milliseconds since starting the trace    sampled at function-start"""
+
         self.memory = fields[4]
         """Memory usage in bytes before starting this function"""
+
         self.function_name = fields[5]
         """The function's defined name, anonymous functions are {closure:PATH:linenums}"""
+
         self.is_function_user_defined = fields[6] == "1"
         """Whether the function is part of std-lib, or defined in php
         Beware: Is true for functions defined in external libraries"""
+
         self.include_filename = Path(fields[7])
         """If the function is require/include, this field has the value of the path included/required"""
+
         self.filename = Path(fields[8])
         """Filename where the function got called"""
+
         self.line_number = fields[9]
         """Line number where the function definition starts"""
+
         self.params = fields[11:]
         """All parameters of the function"""
-        self.definition_filename = function_mappings.get(Path(fields[5]), "{{missing file}}")
+
+        self.definition_filename = function_mappings.get(fields[5], "{{missing file}}")
         """Where the called function is defined"""
 
 
