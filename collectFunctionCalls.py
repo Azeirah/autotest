@@ -7,12 +7,15 @@ This file will parse all function calls, with their parameters and their respect
 
 import argparse
 import sqlite3
+import os
 import os.path
 import re
 import time
 import sys
 import traceback
 import datetime
+from contextlib import contextmanager
+from timeit import default_timer
 from collections import Counter
 from pprint import pprint
 
@@ -21,11 +24,26 @@ import PHPTraceTokenizer
 import PHPProfileParser
 from settings import traceDir
 
+@contextmanager
+def elapsed_timer():
+    """https://stackoverflow.com/a/30024601"""
+    start = default_timer()
+    elapser = lambda: default_timer() - start
+    yield lambda: elapser()
+    end = default_timer()
+    elapser = lambda: end-start
+
 parser = argparse.ArgumentParser(description="Add function-call-parameters to a database")
 parser.add_argument('request', nargs="?", type=str, help="trace request")
 parser.add_argument('-d', '--db', nargs="?", dest="db", type=str, default="function-calls.db", help="name of the sqlite3 .db file")
 parser.add_argument('-a', '--auto-import', action="store_true", dest="autoImport", default=False, help="Automatically import all unprocessed traces")
 parser.add_argument('-r', '--auto-remove', action="store_true", dest="autoRemove", default=False, help="Remove traces after succesfully processing")
+
+os.chdir(os.path.split(__file__)[0])
+schema_path = "schema.sql"
+
+def open_db_connection(db_name):
+    return sqlite3.connect(db_name)
 
 def parse_request_filename(filename):
     """Takes a filename of a file in the traces directory
@@ -65,9 +83,10 @@ def parse_request_filename(filename):
     return False
 
 def set_up_db(db_name):
-    with sqlite3.connect(db_name) as conn:
+    with open_db_connection(db_name) as conn:
+        conn.execute("BEGIN")
         c = conn.cursor()
-        with open('schema.sql') as f:
+        with open(schema_path) as f:
             c.executescript(f.read())
         conn.commit()
 
@@ -119,6 +138,7 @@ def insert_value(value, conn):
 
 
 def insert_request(request, conn):
+    conn.execute("BEGIN")
     c = conn.cursor()
     timestamp = datetime.datetime.today().isoformat()
     c.execute("INSERT INTO `traces` (`requestname`, `timestamp`) VALUES (:requestname, :timestamp);", {'requestname': request, 'timestamp': timestamp})
@@ -169,6 +189,7 @@ def insert_function_name(function_name, conn):
         return c.lastrowid
 
 def insert_trace(trace, conn):
+    conn.execute("BEGIN")
     c = conn.cursor()
     calls = PHPTraceParser.grouped_function_calls(trace)
 
@@ -231,8 +252,6 @@ def remove_request_files(request):
             pass
 
 def insert_request_in_db(conn, requests, uid, autoRemove=False):
-    start_time = time.time()
-
     request = requests[uid]
 
     profiles = request['profile']
@@ -240,16 +259,22 @@ def insert_request_in_db(conn, requests, uid, autoRemove=False):
 
     if not request_exists(uid, conn):
         profile_filenames = [os.path.join(traceDir, profile['filename']) for profile in profiles]
-        function_mappings = PHPProfileParser.get_function_file_mapping(profile_filenames)
-        print("... done parsing profile")
+
+        with elapsed_timer() as profiler_timer:
+            function_mappings = PHPProfileParser.get_function_file_mapping(profile_filenames)
+        print("Took {:.4f} seconds to parse profile".format(profiler_timer()))
 
         for trace in traces:
-            trace = create_trace(trace['path'], function_mappings)
-            print("... done parsing trace")
-            insert_trace(trace, conn)
-            insert_request(uid, conn)
-            elapsed_time = time.time() - start_time
-            print("Took {:.0f} seconds to process request --{}--".format(elapsed_time, uid))
+            with elapsed_timer() as trace_timer:
+                trace = create_trace(trace['path'], function_mappings)
+            print("Took {:.4f} seconds to parse trace".format(trace_timer()))
+
+            with elapsed_timer() as db_timer:
+                insert_trace(trace, conn)
+                insert_request(uid, conn)
+
+            print("Took {:.4f} seconds to insert the trace into the database".format(db_timer()))
+
         if autoRemove:
             remove_request_files(request)
     else:
@@ -284,7 +309,7 @@ if __name__ == '__main__':
         set_up_db(db_name)
 
     if args.request:
-        with sqlite3.connect(db_name) as conn:
+        with open_db_connection(db_name) as conn:
             insert_request_in_db(conn, args.request, args.autoRemove)
 
     if args.autoImport:
@@ -292,23 +317,10 @@ if __name__ == '__main__':
 
         for uid in requests:
             print("Found request --{}--".format(uid))
-            with sqlite3.connect(db_name) as conn:
+            with open_db_connection(db_name) as conn:
                 try:
                     insert_request_in_db(conn, requests, uid, args.autoRemove)
                 except Exception as e:
                     print("Error while processing, moving on to the next")
                     traceback.print_exc()
             print("Done processing request --{}--\n".format(uid))
-
-        # for request, count in Counter(files).items():
-        #     if count == 2 and re.match(r"^\d+", request):
-        #         print("Found request --{}--".format(request))
-        #         with sqlite3.connect(db_name) as conn:
-        #             try:
-        #                 insert_request_in_db(conn, request, args.autoRemove)
-        #             except Exception as e:
-        #                 print("Error while processing, moving on to the next")
-        #                 traceback.print_exc()
-        #         print("Done processing request --{}--\n".format(request))
-            # else:
-            #     print("Invalid request:", request)
