@@ -241,9 +241,11 @@ def insert_request_in_db(conn, requests, uid, autoRemove=False):
     if not request_exists(uid, conn):
         profile_filenames = [os.path.join(traceDir, profile['filename']) for profile in profiles]
         function_mappings = PHPProfileParser.get_function_file_mapping(profile_filenames)
+        print("... done parsing profile")
 
         for trace in traces:
             trace = create_trace(trace['path'], function_mappings)
+            print("... done parsing trace")
             insert_trace(trace, conn)
             insert_request(uid, conn)
             elapsed_time = time.time() - start_time
