@@ -76,28 +76,45 @@ def request_exists(request, conn):
     c.execute("SELECT COUNT(*) FROM `traces` WHERE `requestname`=?", (request,))
     return c.fetchone()[0] >= 1
 
-def insert_parameters(parameters, conn):
-    param_ids = []
-    for parameter in parameters:
-        param_ids += insert_parameter(parameter, conn)
+def insert_parameters(parameters, function_invocation_id, conn):
+    value_ids = []
 
-def insert_parameter(parameter, conn):
+    for parameter in parameters:
+        value_ids.append(insert_value(parameter, conn))
+
+    for idx, parameter in enumerate(parameters):
+        insert_parameter(value_ids[idx], function_invocation_id, conn)
+
+def insert_parameter(value_id, function_invocation_id, conn):
     c = conn.cursor()
 
     args = {
-        'value': parameter
+        'value_id': value_id,
+        'function_invocation_id': function_invocation_id
     }
 
-    c.execute("SELECT `rowid` FROM `invocation_parameters` WHERE `value`=:value", args)
+    c.execute("""
+        INSERT INTO `invocation_parameters` VALUES (:function_invocation_id, :value_id)
+    """, args)
+
+    return c.lastrowid
+
+def insert_value(value, conn):
+    c = conn.cursor()
+
+    args = {
+        'value': value
+    }
+
+    c.execute("SELECT `rowid` FROM `values` WHERE `value`=:value", args)
     rowid = c.fetchone()
 
     try:
         return rowid[0]
     except TypeError:
         c.execute("""
-            INSERT INTO `invocation_parameters` VALUES (:value)
+            INSERT INTO `values` VALUES (:value)
         """, args)
-
         return c.lastrowid
 
 
@@ -166,20 +183,22 @@ def insert_trace(trace, conn):
             c.execute("""
                 INSERT INTO
                     `function_invocations`
-                    (`name`, `params`, `returnval`, `calling_filename`, `definition_filename`, `linenum`)
+                    (`name`, `returnval`, `calling_filename`, `definition_filename`, `linenum`)
                 VALUES
-                    (:name, :params, :returnval, :calling_filename, :definition_filename, :linenum)
+                    (:name, :returnval, :calling_filename, :definition_filename, :linenum)
 
                 """,
                 {
                     'name': function_id,
-                    'params': call['parameters'],
                     'returnval': retval,
                     'calling_filename': calling_filename_id,
                     'definition_filename': definition_filename_id,
                     'linenum': call['line_number']
                 }
             )
+            function_invocation_id = c.lastrowid
+
+            insert_parameters(call['parameters'], function_invocation_id, conn)
 
     conn.commit()
 
