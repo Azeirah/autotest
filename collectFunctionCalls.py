@@ -14,6 +14,7 @@ import time
 import sys
 import traceback
 import datetime
+import uuid
 from contextlib import contextmanager
 from timeit import default_timer
 from collections import Counter
@@ -102,41 +103,19 @@ def insert_parameters(parameters, function_invocation_id, conn):
     for parameter in parameters:
         value_ids.append(insert_value(parameter, conn))
 
-    for idx, parameter in enumerate(parameters):
-        insert_parameter(value_ids[idx], function_invocation_id, conn)
+    params = [
+        {
+            'value_id': value_ids[idx],
+            'function_invocation_id': function_invocation_id
+        }
 
-def insert_parameter(value_id, function_invocation_id, conn):
+        for idx, parameter in enumerate(parameters)
+    ]
+
     c = conn.cursor()
-
-    args = {
-        'value_id': value_id,
-        'function_invocation_id': function_invocation_id
-    }
-
-    c.execute("""
+    c.executemany("""
         INSERT INTO `invocation_parameters` VALUES (:function_invocation_id, :value_id)
-    """, args)
-
-    return c.lastrowid
-
-def insert_value(value, conn):
-    c = conn.cursor()
-
-    args = {
-        'value': value
-    }
-
-    c.execute("SELECT `rowid` FROM `values` WHERE `value`=:value", args)
-    rowid = c.fetchone()
-
-    try:
-        return rowid[0]
-    except TypeError:
-        c.execute("""
-            INSERT INTO `values` VALUES (:value)
-        """, args)
-        return c.lastrowid
-
+    """, params)
 
 def insert_request(request, conn):
     c = conn.cursor()
@@ -144,82 +123,94 @@ def insert_request(request, conn):
     c.execute("INSERT INTO `traces` (`requestname`, `timestamp`) VALUES (:requestname, :timestamp);", {'requestname': request, 'timestamp': timestamp})
     conn.commit()
 
-def insert_filename(filename, conn):
-    c = conn.cursor()
-
-    args = {
-        'filename': filename
-    }
-
-    c.execute("""
-        SELECT `rowid` FROM `file_names` WHERE name=:filename
-    """, args)
-
-    rowid = c.fetchone()
-
-    try:
-        return rowid[0]
-    except TypeError:
-        c.execute("""
-            INSERT INTO `file_names` VALUES (:filename)
-        """, args)
-
-        return c.lastrowid
-
-def insert_function_name(function_name, conn):
-    c = conn.cursor()
-
-    args = {
-        'function_name': function_name
-    }
-
-    c.execute("""
-        SELECT `rowid` FROM `function_names` WHERE name=:function_name
-    """, args)
-
-    rowid = c.fetchone()
-
-    try:
-        return rowid[0]
-    except TypeError:
-        c.execute("""
-            INSERT INTO `function_names` VALUES (:function_name)
-        """, args)
-
-        return c.lastrowid
-
 def insert_trace(trace, conn):
     c = conn.cursor()
     calls = PHPTraceParser.grouped_function_calls(trace)
 
+    values = set()
+    file_names = set()
+    function_names = set()
+    function_invocations = []
+    params = []
     for name, calls in calls.items():
         for call in calls:
+            h = uuid.uuid4()
             retval = call.get('return', '{{void}}')
+            definition_filename = call['definition_filename']
+            calling_filename = call['calling_filename']
 
-            definition_filename_id = insert_filename(call['definition_filename'], conn)
-            calling_filename_id = insert_filename(call['calling_filename'], conn)
-            function_id = insert_function_name(name, conn)
-            returnval_id = insert_value(retval, conn)
+            for param in call['parameters']:
+                values.add((param,))
+                params.append({
+                    "function_invocation_hash": h,
+                    "value": param
+                })
 
-            c.execute("""
-                INSERT INTO
-                    `function_invocations`
-                    (`name`, `returnval`, `calling_filename`, `definition_filename`, `linenum`)
-                VALUES
-                    (:name, :returnval, :calling_filename, :definition_filename, :linenum)
+            values.add((retval,))
 
-                """,
-                {
-                    'name': function_id,
-                    'returnval': returnval_id,
-                    'calling_filename': calling_filename_id,
-                    'definition_filename': definition_filename_id,
-                    'linenum': call['line_number']
-                }
+            file_names.add((definition_filename,))
+            file_names.add((calling_filename,))
+
+            function_names.add((name,))
+
+            function_invocations.append({
+                "name": name,
+                "returnval": retval,
+                "calling_filename": calling_filename,
+                "definition_filename": definition_filename,
+                "linenum": call['line_number'],
+                "hash": h
+            })
+
+    c.executemany(
+        """INSERT OR IGNORE INTO `values` VALUES (:value)""",
+        values
+    )
+
+    c.executemany(
+        """INSERT OR IGNORE into `file_names` VALUES (:file_name)""",
+        file_names
+    )
+
+    c.executemany(
+        """INSERT OR IGNORE into `function_names` VALUES (:function_name)""",
+        function_names
+    )
+
+    c.executemany(
+        """
+        INSERT INTO
+            `function_invocations`
+            (
+             `name`,
+             `returnval`,
+             `calling_filename`,
+             `definition_filename`,
+             `linenum`,
+             `hash`
             )
-            function_invocation_id = c.lastrowid
+        VALUES
+            (
+             (SELECT `rowid` FROM `function_names` WHERE `name`=:name),
+             (SELECT `rowid` FROM `values` WHERE `value`=:returnval),
+             (SELECT `rowid` FROM `file_names` WHERE `name`=:calling_filename),
+             (SELECT `rowid` FROM `file_names` WHERE `name`=:definition_filename),
+             :linenum,
+             :hash
+            );
+        """,
+        function_invocations
+    )
 
-            insert_parameters(call['parameters'], function_invocation_id, conn)
+    c.executemany(
+        """
+        INSERT INTO `invocation_parameters` VALUES
+        (
+            :function_invocation_hash,
+            (SELECT `rowid` FROM `values` WHERE `value`=:value)
+        )
+        """,
+        params)
 
     conn.commit()
 
