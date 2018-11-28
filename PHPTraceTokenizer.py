@@ -86,27 +86,26 @@ class Trace:
                 yield (field, i)
 
     def parse(self):
-        with open(self.path, encoding="utf-8", errors="ignore") as f:
-            for r in f.readlines():
-                info = r.split("\t")
-                num_fields = len(info)
-                try:
-                    if num_fields == 5:
-                        yield Exit(info)
-                    elif num_fields == 6:
-                        yield Return(info)
-                    elif num_fields >= 11:
-                        yield Entry(info, self.function_mappings)
-                    else:
-                        if ("Version" not in r
-                                and "File format" not in r
-                                and "TRACE START" not in r
-                                and "TRACE END" not in r
-                                and r != "\n"):
-                            print("Unknown type field", r)
-                            pass
-                except Exception as e:
-                    pass
-                    # print("parsing error")
-                    # raise e
-                    # missed node.. parsing error
+        for line in open(self.path, encoding="utf-8", errors="ignore"):
+            info = line.split("\t")
+            num_fields = len(info)
+            try:
+                if num_fields == 5:
+                    yield Exit(info)
+                elif num_fields == 6:
+                    yield Return(info)
+                elif num_fields >= 11:
+                    yield Entry(info, self.function_mappings)
+                else:
+                    if ("Version" not in r
+                            and "File format" not in r
+                            and "TRACE START" not in r
+                            and "TRACE END" not in r
+                            and r != "\n"):
+                        print("Unknown type field", r)
+                        pass
+            except Exception as e:
+                pass
+                # print("parsing error")
+                # raise e
+                # missed node.. parsing error
