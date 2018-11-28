@@ -45,7 +45,8 @@ schema_path = "schema.sql"
 
 def open_db_connection(db_name):
     conn = sqlite3.connect(db_name)
-    conn.execute("BEGIN")
+    conn.execute("PRAGMA synchronous = OFF")
+    # conn.execute("BEGIN")
     return conn
 
 def parse_request_filename(filename):
@@ -62,7 +63,7 @@ def parse_request_filename(filename):
         'filename': filename
     }
 
-    fmt = re.compile(r"(?P<seconds>\d+)_(?P<microseconds>\d+) (?P<uid>[a-zA-Z0-9\-]+)(?P<ext>\.x[pt])")
+    fmt = re.compile(r"(?P<seconds>\d+)_(?P<microseconds>\d+) (?P<uid>[a-zA-Z0-9@\-]+)(?P<ext>\.x[pt])")
 
     match = fmt.match(filename)
 
@@ -125,7 +126,9 @@ def insert_request(request, conn):
 
 def insert_trace(trace, conn):
     c = conn.cursor()
-    calls = PHPTraceParser.grouped_function_calls(trace)
+    with elapsed_timer() as traceParseTimer:
+        calls = PHPTraceParser.grouped_function_calls(trace)
+    print("Took {:.4f}s to parse traces".format(traceParseTimer()))
 
     values = set()
     file_names = set()
@@ -162,57 +165,82 @@ def insert_trace(trace, conn):
                 "hash": h
             })
 
-    c.executemany(
-        """INSERT OR IGNORE INTO `values` VALUES (:value)""",
-        values
-    )
 
-    c.executemany(
-        """INSERT OR IGNORE into `file_names` VALUES (:file_name)""",
-        file_names
-    )
+    c.execute("BEGIN TRANSACTION")
 
-    c.executemany(
-        """INSERT OR IGNORE into `function_names` VALUES (:function_name)""",
-        function_names
-    )
-
-    c.executemany(
-        """
-        INSERT INTO
-            `function_invocations`
-            (
-             `name`,
-             `returnval`,
-             `calling_filename`,
-             `definition_filename`,
-             `linenum`,
-             `hash`
-            )
-        VALUES
-            (
-             (SELECT `rowid` FROM `function_names` WHERE `name`=:name),
-             (SELECT `rowid` FROM `values` WHERE `value`=:returnval),
-             (SELECT `rowid` FROM `file_names` WHERE `name`=:calling_filename),
-             (SELECT `rowid` FROM `file_names` WHERE `name`=:definition_filename),
-             :linenum,
-             :hash
-            );
-        """,
-        function_invocations
-    )
-
-    c.executemany(
-        """
-        INSERT INTO `invocation_parameters` VALUES
-        (
-            :function_invocation_hash,
-            (SELECT `rowid` FROM `values` WHERE `value`=:value)
+    with elapsed_timer() as db_timer:
+        c.executemany(
+            """INSERT OR IGNORE INTO `values` VALUES (:value)""",
+            values
         )
-        """,
-        params)
 
-    conn.commit()
+        prev_time = 0
+        new_time = db_timer()
+        print("Took {:.4f}s to insert {} `values`".format(new_time - prev_time, len(values)))
+        prev_time = new_time
+
+        c.executemany(
+            """INSERT OR IGNORE into `file_names` VALUES (:file_name)""",
+            file_names
+        )
+        new_time = db_timer()
+        print("Took {:.4f}s to insert {} `file_names`".format(new_time - prev_time, len(file_names)))
+        prev_time = new_time
+
+        c.executemany(
+            """INSERT OR IGNORE into `function_names` VALUES (:function_name)""",
+            function_names
+        )
+        new_time = db_timer()
+        print("Took {:.4f}s to insert {} `function_names`".format(new_time - prev_time, len(function_names)))
+        prev_time = new_time
+
+        c.executemany(
+            """
+            INSERT INTO
+                `function_invocations`
+                (
+                 `name`,
+                 `returnval`,
+                 `calling_filename`,
+                 `definition_filename`,
+                 `linenum`,
+                 `hash`
+                )
+            VALUES
+                (
+                 (SELECT `rowid` FROM `function_names` WHERE `name`=:name),
+                 (SELECT `rowid` FROM `values` WHERE `value`=:returnval),
+                 (SELECT `rowid` FROM `file_names` WHERE `name`=:calling_filename),
+                 (SELECT `rowid` FROM `file_names` WHERE `name`=:definition_filename),
+                 :linenum,
+                 :hash
+                );
+            """,
+            function_invocations
+        )
+        new_time = db_timer()
+        print("Took {:.4f}s to insert {} `function_invocations`".format(new_time - prev_time, len(function_invocations)))
+        prev_time = new_time
+
+        c.executemany(
+            """
+            INSERT INTO `invocation_parameters` VALUES
+            (
+                :function_invocation_hash,
+                (SELECT `rowid` FROM `values` WHERE `value`=:value)
+            )
+            """,
+            params)
+        new_time = db_timer()
+        print("Took {:.4f}s to insert {} `invocation_parameters`".format(new_time - prev_time, len(params)))
+        prev_time = new_time
+
+        c.execute("COMMIT")
+        conn.commit()
+        new_time = db_timer()
+        print("Took {:.4f}s to commit to db".format(new_time - prev_time))
+        prev_time = new_time
 
 def trace_and_profile_from_request(traceDir, request):
     return (
@@ -257,13 +285,10 @@ def insert_request_in_db(conn, requests, uid, autoRemove=False):
         for trace in traces:
             with elapsed_timer() as trace_timer:
                 trace = create_trace(trace['path'], function_mappings)
-            print("Took {:.4f} seconds to parse trace".format(trace_timer()))
+            print("Took {:.4f} seconds to tokenize trace".format(trace_timer()))
 
-            with elapsed_timer() as db_timer:
-                insert_trace(trace, conn)
-                insert_request(uid, conn)
-
-            print("Took {:.4f} seconds to insert the trace into the database".format(db_timer()))
+            insert_trace(trace, conn)
+            insert_request(uid, conn)
 
         if autoRemove:
             remove_request_files(request)
