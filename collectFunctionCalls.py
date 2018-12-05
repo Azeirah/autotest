@@ -46,7 +46,6 @@ schema_path = "schema.sql"
 def open_db_connection(db_name):
     conn = sqlite3.connect(db_name)
     conn.execute("PRAGMA synchronous = OFF")
-    # conn.execute("BEGIN")
     return conn
 
 def parse_request_filename(filename):
