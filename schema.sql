@@ -4,7 +4,7 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE `function_invocations`
 (
-    `hash` INTEGER UNIQUE,
+    `hash` TEXT UNIQUE,
     `name` INTEGER,
     `returnval` INTEGER,
     `calling_filename` INTEGER,
