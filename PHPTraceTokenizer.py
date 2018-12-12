@@ -74,7 +74,6 @@ class Return(Field):
         self.function_num = int(fields[1])
         self.return_value = fields[5]
 
-
 class Trace:
     def __init__(self, path, function_mappings):
         self.path = path
@@ -88,24 +87,19 @@ class Trace:
     def parse(self):
         for line in open(self.path, encoding="utf-8", errors="ignore"):
             info = line.split("\t")
-            num_fields = len(info)
             try:
-                if num_fields == 5:
-                    yield Exit(info)
-                elif num_fields == 6:
-                    yield Return(info)
-                elif num_fields >= 11:
+                discriminator = info[2]
+                if discriminator == '0':
                     yield Entry(info, self.function_mappings)
-                else:
-                    if ("Version" not in r
-                            and "File format" not in r
-                            and "TRACE START" not in r
-                            and "TRACE END" not in r
-                            and r != "\n"):
-                        print("Unknown type field", r)
-                        pass
+                elif discriminator == '1':
+                    yield Exit(info)
+                elif discriminator == 'R':
+                    yield Return(info)
             except Exception as e:
-                pass
-                # print("parsing error")
-                # raise e
+                # pass
+                if 'Version: ' in line or 'File format: ' in line or 'TRACE START [' in line or 'TRACE END' in line or '\n' == line:
+                    continue
+                print(line)
+                print("parsing error")
+                raise e
                 # missed node.. parsing error

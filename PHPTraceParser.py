@@ -63,6 +63,29 @@ def function_calls(trace):
     return calls
 
 
+def ordered_function_calls(trace):
+    calls = []
+
+    for field, i in trace.visit(lambda f: filter_entry(f) or filter_return(f)):
+        if filter_entry(field):
+            calls.insert(field.function_num, {
+                'name': get_fn_name(field.function_name),
+                'parameters': field.params,
+                'calling_filename': str(field.filename),
+                'definition_filename': str(field.definition_filename),
+                'line_number': field.line_number,
+                'return': '{{void}}'
+            })
+        elif filter_return(field):
+            retval = getattr(field, 'return_value', '{{void}}')
+
+            calls[field.function_num]['return'] = retval
+
+    calls[0]['return'] = '{{void}}'
+
+    return calls
+
+
 def grouped_function_calls(trace):
     calls = {}
 
@@ -91,15 +114,6 @@ def grouped_function_calls(trace):
                 retval = '{{void}}'
 
             _currentCall['return'] = retval
-
-    try:
-        # main is recorded as a function call
-        calls['{main}'][0]['return'] = ''
-    except KeyError:
-        # traces for exceptions don't have a main call
-        pass
-
-    return calls
 
 
 def filenames(trace):

@@ -32,6 +32,10 @@ xdebug.trace_format=1
 xdebug.collect_return=1
 xdebug.trace_output_name="%u %U"
 
+xdebug.var_display_max_data=-1
+xdebug.var_display_max_children=-1
+xdebug.var_display_max_depth=-1
+
 xdebug.profiler_enable=1
 xdebug.profiler_output_dir=/home/mb/Documents/autotest/trace-data/
 xdebug.profiler_output_name="%u %U.xp"

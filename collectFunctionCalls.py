@@ -126,7 +126,7 @@ def insert_request(request, conn):
 def insert_trace(trace, conn):
     c = conn.cursor()
     with elapsed_timer() as traceParseTimer:
-        calls = PHPTraceParser.grouped_function_calls(trace)
+        calls = PHPTraceParser.ordered_function_calls(trace)
     print("Took {:.4f}s to parse traces".format(traceParseTimer()))
 
     values = set()
@@ -134,35 +134,41 @@ def insert_trace(trace, conn):
     function_names = set()
     function_invocations = []
     params = []
-    for name, calls in calls.items():
-        for call in calls:
-            h = str(uuid.uuid4())
-            retval = call.get('return', '{{void}}')
-            definition_filename = call['definition_filename']
-            calling_filename = call['calling_filename']
+    for call in calls:
+        name = call['name']
+        h = str(uuid.uuid4())
+        # if 'checkRateLimit' in call['name']:
+        #     print(call)
+        try:
+            retval = call['return']
+        except KeyError:
+            print(call['name'])
+            # sys.exit()
+        definition_filename = call['definition_filename']
+        calling_filename = call['calling_filename']
 
-            for param in call['parameters']:
-                values.add((param,))
-                params.append({
-                    "function_invocation_hash": h,
-                    "value": param
-                })
-
-            values.add((retval,))
-
-            file_names.add((definition_filename,))
-            file_names.add((calling_filename,))
-
-            function_names.add((name,))
-
-            function_invocations.append({
-                "name": name,
-                "returnval": retval,
-                "calling_filename": calling_filename,
-                "definition_filename": definition_filename,
-                "linenum": call['line_number'],
-                "hash": h
+        for param in call['parameters']:
+            values.add((param,))
+            params.append({
+                "function_invocation_hash": h,
+                "value": param
             })
+
+        values.add((retval,))
+
+        file_names.add((definition_filename,))
+        file_names.add((calling_filename,))
+
+        function_names.add((name,))
+
+        function_invocations.append({
+            "name": name,
+            "returnval": retval,
+            "calling_filename": calling_filename,
+            "definition_filename": definition_filename,
+            "linenum": call['line_number'],
+            "hash": h
+        })
 
 
     c.execute("BEGIN TRANSACTION")
