@@ -34,7 +34,7 @@ class Entry(Field):
         self.time_index = float(fields[3])
         """Time in milliseconds since starting the trace    sampled at function-start"""
 
-        self.memory = fields[4]
+        self.memory = int(fields[4])
         """Memory usage in bytes before starting this function"""
 
         self.function_name = fields[5]
@@ -65,7 +65,7 @@ class Exit(Field):
         self.level = int(fields[0])
         self.function_num = int(fields[1])
         self.time_index = float(fields[3])
-        self.memory = fields[4]
+        self.memory = int(fields[4])
 
 
 class Return(Field):
