@@ -9,6 +9,9 @@ def filter_entry(node):
 def filter_return(node):
     return node.type == "Return"
 
+def filter_exit(node):
+    return node.type == "Exit"
+
 def get_fn_name(fn):
     """Display the field.function_name property"""
     if '->' in fn:
