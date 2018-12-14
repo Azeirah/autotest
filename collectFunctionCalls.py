@@ -139,6 +139,8 @@ def insert_trace(trace, conn):
         retval = call['return']
         definition_filename = call['definition_filename']
         calling_filename = call['calling_filename']
+        memory_delta = call['memory_delta']
+        time_delta = call['time_delta']
 
         for param in call['parameters']:
             values.add((param,))
@@ -148,6 +150,8 @@ def insert_trace(trace, conn):
             })
 
         values.add((retval,))
+        values.add((memory_delta, ))
+        values.add((time_delta, ))
 
         file_names.add((definition_filename,))
         file_names.add((calling_filename,))
@@ -160,7 +164,9 @@ def insert_trace(trace, conn):
             "calling_filename": calling_filename,
             "definition_filename": definition_filename,
             "linenum": call['line_number'],
-            "hash": h
+            "hash": h,
+            "time": time_delta,
+            "memory": memory_delta
         })
 
     c = conn.cursor()
@@ -202,6 +208,8 @@ def insert_trace(trace, conn):
                  `returnval`,
                  `calling_filename`,
                  `definition_filename`,
+                 `memory`,
+                 `time`,
                  `linenum`,
                  `hash`
                 )
@@ -211,6 +219,8 @@ def insert_trace(trace, conn):
                  (SELECT `rowid` FROM `values` WHERE `value`=:returnval),
                  (SELECT `rowid` FROM `file_names` WHERE `name`=:calling_filename),
                  (SELECT `rowid` FROM `file_names` WHERE `name`=:definition_filename),
+                 (SELECT `rowid` FROM `values` WHERE `value`=:memory),
+                 (SELECT `rowid` FROM `values` WHERE `value`=:time),
                  :linenum,
                  :hash
                 );

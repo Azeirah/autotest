@@ -10,11 +10,15 @@ CREATE TABLE `function_invocations`
     `calling_filename` INTEGER,
     `definition_filename` INTEGER,
     `linenum` INTEGER,
+    `memory` INTEGER,
+    `time` INTEGER,
 
     FOREIGN KEY(`name`) REFERENCES `function_names`(`ROWID`),
     FOREIGN KEY(`calling_filename`) REFERENCES `file_names`(`ROWID`),
     FOREIGN KEY(`definition_filename`) REFERENCES `file_names`(`ROWID`),
-    FOREIGN KEY(`returnval`) REFERENCES `values`(`ROWID`)
+    FOREIGN KEY(`returnval`) REFERENCES `values`(`ROWID`),
+    FOREIGN KEY(`memory`) REFERENCES `values`(`ROWID`),
+    FOREIGN KEY(`time`) REFERENCES `values`(`ROWID`)
 );
 
 -- each function invocation has an associated set
