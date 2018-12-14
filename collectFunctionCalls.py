@@ -136,13 +136,7 @@ def insert_trace(trace, conn):
     for call in calls:
         name = call['name']
         h = str(uuid.uuid4())
-        # if 'checkRateLimit' in call['name']:
-        #     print(call)
-        try:
-            retval = call['return']
-        except KeyError:
-            print(call['name'])
-            # sys.exit()
+        retval = call['return']
         definition_filename = call['definition_filename']
         calling_filename = call['calling_filename']
 
