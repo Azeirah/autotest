@@ -75,3 +75,6 @@ This is a simple command-line-interface to introspect php trace files. Like the 
 * Normalize parameters
   * Add a `params` or even `values` table
   * 1-to-many for `function_call` to `params`
+### Relevant documentation
+
+[The documentation of xdebug's profile format](http://valgrind.org/docs/manual/cl-format.html)
