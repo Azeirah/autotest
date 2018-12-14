@@ -124,7 +124,6 @@ def insert_request(request, conn):
     conn.commit()
 
 def insert_trace(trace, conn):
-    c = conn.cursor()
     with elapsed_timer() as traceParseTimer:
         calls = PHPTraceParser.ordered_function_calls(trace)
     print("Took {:.4f}s to parse traces".format(traceParseTimer()))
@@ -170,7 +169,7 @@ def insert_trace(trace, conn):
             "hash": h
         })
 
-
+    c = conn.cursor()
     c.execute("BEGIN TRANSACTION")
 
     with elapsed_timer() as db_timer:
@@ -241,7 +240,7 @@ def insert_trace(trace, conn):
         print("Took {:.4f}s to insert {} `invocation_parameters`".format(new_time - prev_time, len(params)))
         prev_time = new_time
 
-        c.execute("COMMIT")
+        # c.execute("COMMIT")
         conn.commit()
         new_time = db_timer()
         print("Took {:.4f}s to commit to db".format(new_time - prev_time))
