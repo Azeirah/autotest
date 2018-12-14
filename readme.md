@@ -63,18 +63,27 @@ This is a simple command-line-interface to introspect php trace files. Like the 
 
 ### TODO
 
-* Organize test-cases for the trace and profile parser
-* Add a convenient way to automatically turn capturing on and off with one accessible command
-* Work on reducing database size
-  * Minimize filename redunancy by creating a `files` table
-  * (I know that db size is _very_ optimizable, standard zipping takes from 3.2GB to 140MB, 7z ultra from 3.2GB to _43MB_, compression ratio of 74x!)
-* Parsing is very slow
-  * Parallelize?
-  * Automatically parse in the background with a daemon/service?
-  * Speed up parsing bij offloading that in Rust/C++?
-* Normalize parameters
-  * Add a `params` or even `values` table
-  * 1-to-many for `function_call` to `params`
+* [x] Organize test-cases for the trace and profile parser
+* [ ] Add a convenient way to automatically turn capturing on and off with one accessible command
+* [ ] Add a "watch" command
+* [x] Work on reducing database size
+  * [x] Minimize filename redunancy by creating a `files` table
+  * [x] (I know that db size is _very_ optimizable, standard zipping takes from 3.2GB to 140MB, 7z ultra from 3.2GB to _43MB_, compression ratio of 74x!)
+* [x] Normalize parameters
+  * [x] Add a `params` or even `values` table
+  * [x] 1-to-many for `function_call` to `params`
+* [ ] Add more diagnostics to the insights
+    * [ ] Memory usage per function call
+    * [ ] Time per function call
+* [ ] Add way to deal with the huge class {} data structures, they take up most of the space..
+    * [ ] Reduce them to their name only?
+    * [ ]
+* [ ] Add type column to the `values` table for all PHP types.
+* [ ] Higher level diagnostics
+    * [ ] Parameter type inference
+    * [ ] ...?
+
+
 ### Relevant documentation
 
 [The documentation of xdebug's profile format](http://valgrind.org/docs/manual/cl-format.html)
