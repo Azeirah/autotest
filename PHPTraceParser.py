@@ -67,18 +67,31 @@ def function_calls(trace):
 
 
 def ordered_function_calls(trace):
-    calls = []
+    calls = {}
 
-    for field, i in trace.visit(lambda f: filter_entry(f) or filter_return(f)):
+    for field, i in trace.visit(lambda _: True):
         if filter_entry(field):
-            calls.insert(field.function_num, {
+            calls[field.function_num] = {
                 'name': get_fn_name(field.function_name),
                 'parameters': field.params,
                 'calling_filename': str(field.filename),
                 'definition_filename': str(field.definition_filename),
                 'line_number': field.line_number,
-                'return': '{{void}}'
-            })
+                'return': '{{void}}',
+                'memory_start': field.memory,
+                'memory_end': -1,
+                'memory_delta': -1,
+                'time_start': field.time_index,
+                'time_end': -1,
+                'time_delta': -1
+            }
+            # print("entry:", field.function_num)
+        elif filter_exit(field):
+            # print("exit:", field.function_num)
+            calls[field.function_num]['memory_end'] = field.memory
+            calls[field.function_num]['time_end'] = field.time_index
+            calls[field.function_num]['time_delta'] = field.time_index - calls[field.function_num]['time_start']
+            calls[field.function_num]['memory_delta'] = field.memory - calls[field.function_num]['memory_start']
         elif filter_return(field):
             retval = getattr(field, 'return_value', '{{void}}')
 
@@ -86,7 +99,7 @@ def ordered_function_calls(trace):
 
     calls[0]['return'] = '{{void}}'
 
-    return calls
+    return calls.values()
 
 
 def grouped_function_calls(trace):
