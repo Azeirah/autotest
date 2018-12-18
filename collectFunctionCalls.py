@@ -103,13 +103,13 @@ def get_all_types(conn):
     c.execute("SELECT php_type, rowid FROM `value_types`")
     return {key: value for key, value in c.fetchall()}
 
-def insert_request(request, conn):
+def insert_request(uid, conn):
     c = conn.cursor()
     timestamp = datetime.datetime.today().isoformat()
-    c.execute("INSERT INTO `traces` (`requestname`, `timestamp`) VALUES (:requestname, :timestamp);", {'requestname': request, 'timestamp': timestamp})
+    c.execute("INSERT INTO `traces` (`requestname`, `timestamp`) VALUES (:requestname, :timestamp);", {'requestname': uid, 'timestamp': timestamp})
     conn.commit()
 
-def insert_trace(trace, conn):
+def insert_trace(trace, uid, conn):
     with elapsed_timer() as traceParseTimer:
         calls = PHPTraceParser.ordered_function_calls(trace)
     print("Took {:.4f}s to parse traces".format(traceParseTimer()))
@@ -152,7 +152,8 @@ def insert_trace(trace, conn):
             "linenum": call['line_number'],
             "hash": h,
             "time": time_delta,
-            "memory": memory_delta
+            "memory": memory_delta,
+            "requestname": uid
         })
 
 
@@ -199,7 +200,8 @@ def insert_trace(trace, conn):
                  `memory`,
                  `time`,
                  `linenum`,
-                 `hash`
+                 `hash`,
+                 `requestname`
                 )
             VALUES
                 (
@@ -210,7 +212,8 @@ def insert_trace(trace, conn):
                  (SELECT `rowid` FROM `values` WHERE `value`=:memory),
                  (SELECT `rowid` FROM `values` WHERE `value`=:time),
                  :linenum,
-                 :hash
+                 :hash,
+                 :requestname
                 );
             """,
             function_invocations
@@ -283,7 +286,7 @@ def insert_request_in_db(conn, requests, uid, autoRemove=False):
                 trace = create_trace(trace['path'], function_mappings)
             print("Took {:.4f} seconds to tokenize trace".format(trace_timer()))
 
-            insert_trace(trace, conn)
+            insert_trace(trace, uid, conn)
             insert_request(uid, conn)
 
         if autoRemove:

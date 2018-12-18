@@ -60,13 +60,15 @@ CREATE TABLE IF NOT EXISTS `function_invocations`
     `linenum` INTEGER,
     `memory` INTEGER,
     `time` INTEGER,
+    `requestname` TEXT,
 
     FOREIGN KEY(`name`) REFERENCES `function_names`(`ROWID`),
     FOREIGN KEY(`calling_filename`) REFERENCES `file_names`(`ROWID`),
     FOREIGN KEY(`definition_filename`) REFERENCES `file_names`(`ROWID`),
     FOREIGN KEY(`returnval`) REFERENCES `values`(`ROWID`),
     FOREIGN KEY(`memory`) REFERENCES `values`(`ROWID`),
-    FOREIGN KEY(`time`) REFERENCES `values`(`ROWID`)
+    FOREIGN KEY(`time`) REFERENCES `values`(`ROWID`),
+    FOREIGN KEY(`requestname`) REFERENCES `traces`(`requestname`)
 );
 
 
