@@ -3,14 +3,15 @@ import sublime_plugin
 import sqlite3
 import os.path
 
-db_name = r'C:\Users\Marvin\Documents\autotest\function-calls.db'
+settings = sublime.load_settings('MethodUsages.sublime-settings')
+
+db_name = settings.get("db_path")
 conn = sqlite3.connect(db_name)
 
 class MethodUsagesCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         point = self.view.sel()[0]
         word = self.view.substr(self.view.word(point))
-
 
         query = """
         SELECT DISTINCT
@@ -45,8 +46,4 @@ class MethodUsagesCommand(sublime_plugin.TextCommand):
         for item in result:
             content.append(str(item[0]))
 
-        print(word)
         self.view.show_popup_menu(content, on_select=lambda x: sublime.set_clipboard(content[x]) if x != -1 else x)
-        print("```")
-        print(content)
-        print("```")

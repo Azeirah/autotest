@@ -1,6 +1,8 @@
 """Functions to analyse parsed PHP traces with."""
 from pprint import pprint
 from collections import namedtuple
+from PHPLangUtils import PHP_INST_VOID
+
 
 def filter_entry(node):
     """Filters on nodes of type entry"""
@@ -77,7 +79,7 @@ def ordered_function_calls(trace):
                 'calling_filename': str(field.filename),
                 'definition_filename': str(field.definition_filename),
                 'line_number': field.line_number,
-                'return': '{{void}}',
+                'return': PHP_INST_VOID,
                 'memory_start': field.memory,
                 'memory_end': -1,
                 'memory_delta': -1,
@@ -93,11 +95,11 @@ def ordered_function_calls(trace):
             calls[field.function_num]['time_delta'] = field.time_index - calls[field.function_num]['time_start']
             calls[field.function_num]['memory_delta'] = field.memory - calls[field.function_num]['memory_start']
         elif filter_return(field):
-            retval = getattr(field, 'return_value', '{{void}}')
+            retval = getattr(field, 'return_value', PHP_INST_VOID)
 
             calls[field.function_num]['return'] = retval
 
-    calls[0]['return'] = '{{void}}'
+    calls[0]['return'] = PHP_INST_VOID
 
     return calls.values()
 

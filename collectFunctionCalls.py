@@ -20,10 +20,14 @@ from timeit import default_timer
 from collections import Counter
 from pprint import pprint
 
+
+from PHPLangUtils import PHP_TYPE_INTEGER, PHP_TYPE_DOUBLE, php_typed_value
 import PHPTraceParser
 import PHPTraceTokenizer
 import PHPProfileParser
 from settings import traceDir
+
+SCHEMA_PATH = "schema.sql"
 
 @contextmanager
 def elapsed_timer():
@@ -39,13 +43,12 @@ parser.add_argument('request', nargs="?", type=str, help="trace request")
 parser.add_argument('-d', '--db', nargs="?", dest="db", type=str, default="function-calls.db", help="name of the sqlite3 .db file")
 parser.add_argument('-a', '--auto-import', action="store_true", dest="autoImport", default=False, help="Automatically import all unprocessed traces")
 parser.add_argument('-r', '--auto-remove', action="store_true", dest="autoRemove", default=False, help="Remove traces after succesfully processing")
-
-os.chdir(os.path.split(__file__)[0])
-schema_path = "schema.sql"
+parser.add_argument('-n', '--no-db', action="store_true", dest='nodb', default=False, help="Don't write anything to the database. Useful during debugging.")
 
 def open_db_connection(db_name):
     conn = sqlite3.connect(db_name)
     conn.execute("PRAGMA synchronous = OFF")
+    conn.execute("BEGIN TRANSACTION")
     return conn
 
 def parse_request_filename(filename):
@@ -85,37 +88,21 @@ def parse_request_filename(filename):
 
     return False
 
-def set_up_db(db_name):
-    with open_db_connection(db_name) as conn:
-        c = conn.cursor()
-        with open(schema_path) as f:
-            c.executescript(f.read())
-        conn.commit()
+def set_up_db(conn):
+    c = conn.cursor()
+    with open(SCHEMA_PATH) as f:
+        c.executescript(f.read())
+    conn.commit()
 
 def request_exists(request, conn):
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM `traces` WHERE `requestname`=?", (request,))
     return c.fetchone()[0] >= 1
 
-def insert_parameters(parameters, function_invocation_id, conn):
-    value_ids = []
-
-    for parameter in parameters:
-        value_ids.append(insert_value(parameter, conn))
-
-    params = [
-        {
-            'value_id': value_ids[idx],
-            'function_invocation_id': function_invocation_id
-        }
-
-        for idx, parameter in enumerate(parameters)
-    ]
-
+def get_all_types(conn):
     c = conn.cursor()
-    c.executemany("""
-        INSERT INTO `invocation_parameters` VALUES (:function_invocation_id, :value_id)
-    """, params)
+    c.execute("SELECT php_type, rowid FROM `value_types`")
+    return {key: value for key, value in c.fetchall()}
 
 def insert_request(request, conn):
     c = conn.cursor()
@@ -143,15 +130,15 @@ def insert_trace(trace, conn):
         time_delta = call['time_delta']
 
         for param in call['parameters']:
-            values.add((param,))
+            values.add(param)
             params.append({
                 "function_invocation_hash": h,
-                "value": param
+                "value": param.value
             })
 
-        values.add((retval,))
-        values.add((memory_delta, ))
-        values.add((time_delta, ))
+        values.add(retval)
+        values.add(php_typed_value(php_type=PHP_TYPE_INTEGER, value=memory_delta))
+        values.add(php_typed_value(php_type=PHP_TYPE_DOUBLE, value=time_delta))
 
         file_names.add((definition_filename,))
         file_names.add((calling_filename,))
@@ -160,7 +147,7 @@ def insert_trace(trace, conn):
 
         function_invocations.append({
             "name": name,
-            "returnval": retval,
+            "returnval": retval.value,
             "calling_filename": calling_filename,
             "definition_filename": definition_filename,
             "linenum": call['line_number'],
@@ -170,11 +157,14 @@ def insert_trace(trace, conn):
         })
 
     c = conn.cursor()
-    c.execute("BEGIN TRANSACTION")
+
+    types = get_all_types(conn)
+
+    values = [{'value': value.value, 'php_type': types[value.php_type]} for value in values]
 
     with elapsed_timer() as db_timer:
         c.executemany(
-            """INSERT OR IGNORE INTO `values` VALUES (:value)""",
+            """INSERT OR IGNORE INTO `values` (`value`, `php_type`) VALUES (:value, :php_type)""",
             values
         )
 
@@ -325,25 +315,32 @@ def get_unique_requests_from_folder(traceDir):
     return requests
 
 if __name__ == '__main__':
+    os.chdir(os.path.split(__file__)[0])
+
     args = parser.parse_args()
     db_name = args.db
 
-    if not os.path.exists(db_name):
-        set_up_db(db_name)
+    if args.nodb:
+        db_name = ":memory:"
 
-    if args.request:
-        with open_db_connection(db_name) as conn:
+    newdb = False
+    if not os.path.exists(db_name):
+        newdb = True
+    with open_db_connection(db_name) as conn:
+        if newdb:
+            set_up_db(conn)
+
+        if args.request:
             insert_request_in_db(conn, args.request, args.autoRemove)
 
-    if args.autoImport:
-        requests = get_unique_requests_from_folder(traceDir)
+        if args.autoImport:
+            requests = get_unique_requests_from_folder(traceDir)
 
-        for uid in requests:
-            print("Found request --{}--".format(uid))
-            with open_db_connection(db_name) as conn:
+            for uid in requests:
+                print("Found request --{}--".format(uid))
                 try:
                     insert_request_in_db(conn, requests, uid, args.autoRemove)
                 except Exception as e:
                     print("Error while processing, moving on to the next")
                     traceback.print_exc()
-            print("Done processing request --{}--\n".format(uid))
+                print("Done processing request --{}--\n".format(uid))

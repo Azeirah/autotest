@@ -15,7 +15,7 @@ Find more info on these here: https://xdebug.org/docs/all_settings
 """
 
 from pathlib import Path
-
+from PHPLangUtils import infer_type
 
 class Field:
     @property
@@ -53,7 +53,7 @@ class Entry(Field):
         self.line_number = fields[9]
         """Line number where the function definition starts"""
 
-        self.params = fields[11:]
+        self.params = [infer_type(value) for value in fields[11:]]
         """All parameters of the function"""
 
         self.definition_filename = function_mappings.get(fields[5], "{{missing file}}")
@@ -72,7 +72,7 @@ class Return(Field):
     def __init__(self, fields):
         self.level = int(fields[0])
         self.function_num = int(fields[1])
-        self.return_value = fields[5]
+        self.return_value = infer_type(fields[5])
 
 class Trace:
     def __init__(self, path, function_mappings):
