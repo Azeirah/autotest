@@ -1,56 +1,56 @@
-PRAGMA foreign_keys = ON;
+-- PRAGMA foreign_keys = ON;
 -- PRAGMA page_size = 65536;
 -- PRAGMA cache_size= 100000;
 
 
 
-CREATE TABLE `traces`
+CREATE TABLE IF NOT EXISTS `traces`
 (`requestname` TEXT, `timestamp` TEXT);
 
 
 
-CREATE TABLE `file_names`
+CREATE TABLE IF NOT EXISTS `file_names`
 (`name` TEXT);
-CREATE UNIQUE INDEX `idx_file_names`
+CREATE UNIQUE INDEX IF NOT EXISTS `idx_file_names`
 ON `file_names`(`name`);
 
 
 
-CREATE TABLE `value_types`
+CREATE TABLE IF NOT EXISTS `value_types`
 (`php_type` TEXT);
-INSERT INTO `value_types` (`ROWID`, `php_type`) VALUES
-(1, 'null'),
-(2, 'boolean'),
-(3, 'string'),
-(4, 'integer'),
-(5, 'double'),
-(6, 'array'),
-(7, 'object'),
-(8, 'unknown'),
-(9, 'resource');
+INSERT OR IGNORE INTO `value_types` (`php_type`) VALUES
+('null'),
+('boolean'),
+('string'),
+('integer'),
+('double'),
+('array'),
+('object'),
+('unknown'),
+('resource');
 
 
 
-CREATE TABLE `values`
+CREATE TABLE IF NOT EXISTS `values`
 (
     `value` TEXT,
     `php_type` INTEGER,
 
     FOREIGN KEY(`php_type`) REFERENCES `value_types`(`ROWID`)
 );
-CREATE UNIQUE INDEX `idx_values`
+CREATE UNIQUE INDEX IF NOT EXISTS `idx_values`
 ON `values`(`value`);
 
 
 
-CREATE TABLE `function_names`
+CREATE TABLE IF NOT EXISTS `function_names`
 (`name` TEXT);
-CREATE UNIQUE INDEX `idx_function_names`
+CREATE UNIQUE INDEX IF NOT EXISTS `idx_function_names`
 ON `function_names`(`name`);
 
 
 
-CREATE TABLE `function_invocations`
+CREATE TABLE IF NOT EXISTS `function_invocations`
 (
     `hash` TEXT UNIQUE,
     `name` INTEGER,
@@ -73,7 +73,7 @@ CREATE TABLE `function_invocations`
 
 -- each function invocation has an associated set
 -- of `n` parameters
-CREATE TABLE `invocation_parameters`
+CREATE TABLE IF NOT EXISTS `invocation_parameters`
 (
     `function_invocation_hash` TEXT,
     `value_id` INTEGER,

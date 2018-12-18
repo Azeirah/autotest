@@ -48,7 +48,6 @@ parser.add_argument('-n', '--no-db', action="store_true", dest='nodb', default=F
 def open_db_connection(db_name):
     conn = sqlite3.connect(db_name)
     conn.execute("PRAGMA synchronous = OFF")
-    conn.execute("BEGIN TRANSACTION")
     return conn
 
 def parse_request_filename(filename):
@@ -92,7 +91,7 @@ def set_up_db(conn):
     c = conn.cursor()
     with open(SCHEMA_PATH) as f:
         c.executescript(f.read())
-    conn.commit()
+        conn.commit()
 
 def request_exists(request, conn):
     c = conn.cursor()
@@ -156,13 +155,12 @@ def insert_trace(trace, conn):
             "memory": memory_delta
         })
 
-    c = conn.cursor()
 
     types = get_all_types(conn)
-
     values = [{'value': value.value, 'php_type': types[value.php_type]} for value in values]
 
     with elapsed_timer() as db_timer:
+        c = conn.cursor()
         c.executemany(
             """INSERT OR IGNORE INTO `values` (`value`, `php_type`) VALUES (:value, :php_type)""",
             values
@@ -234,11 +232,11 @@ def insert_trace(trace, conn):
         print("Took {:.4f}s to insert {} `invocation_parameters`".format(new_time - prev_time, len(params)))
         prev_time = new_time
 
-        # c.execute("COMMIT")
         conn.commit()
         new_time = db_timer()
         print("Took {:.4f}s to commit to db".format(new_time - prev_time))
         prev_time = new_time
+
 
 def trace_and_profile_from_request(traceDir, request):
     return (
@@ -323,13 +321,8 @@ if __name__ == '__main__':
     if args.nodb:
         db_name = ":memory:"
 
-    newdb = False
-    if not os.path.exists(db_name):
-        newdb = True
     with open_db_connection(db_name) as conn:
-        if newdb:
-            set_up_db(conn)
-
+        set_up_db(conn)
         if args.request:
             insert_request_in_db(conn, args.request, args.autoRemove)
 
