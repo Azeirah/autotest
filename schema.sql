@@ -70,7 +70,8 @@ CREATE TABLE IF NOT EXISTS `function_invocations`
     FOREIGN KEY(`time`) REFERENCES `values`(`ROWID`),
     FOREIGN KEY(`requestname`) REFERENCES `traces`(`requestname`)
 );
-
+CREATE INDEX IF NOT EXISTS `idx_function_invocation_name`
+ON `function_invocations`(`name`);
 
 
 -- each function invocation has an associated set
@@ -83,5 +84,7 @@ CREATE TABLE IF NOT EXISTS `invocation_parameters`
     FOREIGN KEY(`function_invocation_hash`) REFERENCES `function_invocations`(`hash`),
     FOREIGN KEY(`value_id`) REFERENCES `values`(`ROWID`)
 );
+CREATE INDEX IF NOT EXISTS `idx_invocation_parameters_hash`
+ON `invocation_parameters`(`function_invocation_hash`);
 
 
