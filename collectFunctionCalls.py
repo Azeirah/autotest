@@ -20,6 +20,7 @@ from timeit import default_timer
 from collections import Counter
 from pprint import pprint
 
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 from PHPLangUtils import PHP_TYPE_INTEGER, PHP_TYPE_DOUBLE, php_typed_value
 import PHPTraceParser
@@ -44,6 +45,8 @@ parser.add_argument('-d', '--db', nargs="?", dest="db", type=str, default="funct
 parser.add_argument('-a', '--auto-import', action="store_true", dest="autoImport", default=False, help="Automatically import all unprocessed traces")
 parser.add_argument('-r', '--auto-remove', action="store_true", dest="autoRemove", default=False, help="Remove traces after succesfully processing")
 parser.add_argument('-n', '--no-db', action="store_true", dest='nodb', default=False, help="Don't write anything to the database. Useful during debugging.")
+parser.add_argument('-w', '--watch', action="store_true", dest="watch", default=False, help="Automatically import any newly created requests.")
+
 
 def open_db_connection(db_name):
     conn = sqlite3.connect(db_name)
@@ -315,28 +318,41 @@ def get_unique_requests_from_folder(traceDir):
 
     return requests
 
-if __name__ == '__main__':
-    os.chdir(os.path.split(__file__)[0])
 
-    args = parser.parse_args()
-    db_name = args.db
+def run(db, nodb, request, autoRemove, autoImport):
+    db_name = db
 
-    if args.nodb:
+    if nodb:
         db_name = ":memory:"
 
     with open_db_connection(db_name) as conn:
         set_up_db(conn)
-        if args.request:
-            insert_request_in_db(conn, args.request, args.autoRemove)
+        if request:
+            insert_request_in_db(conn, request, autoRemove)
 
-        if args.autoImport:
+        if autoImport:
             requests = get_unique_requests_from_folder(traceDir)
 
             for uid in requests:
                 print("Found request --{}--".format(uid))
                 try:
-                    insert_request_in_db(conn, requests, uid, args.autoRemove)
+                    insert_request_in_db(conn, requests, uid, autoRemove)
                 except Exception as e:
                     print("Error while processing, moving on to the next")
                     traceback.print_exc()
                 print("Done processing request --{}--\n".format(uid))
+
+
+if __name__ == '__main__':
+    os.chdir(os.path.split(__file__)[0])
+
+    args = parser.parse_args()
+
+    if args.watch:
+        print("Watching for changes.")
+        sched = BlockingScheduler()
+        sched.add_job(run, 'interval', seconds=1, args=(args.db, args.nodb, args.request, args.autoRemove, args.autoImport), max_instances=1)
+        sched.start()
+        sched.shutdown()
+    else:
+        run(args)
