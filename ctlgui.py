@@ -3,6 +3,9 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 import ctl
 
 
+ico_default = None
+ico_waiting = None
+
 class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
     def __init__(self, icon, parent=None):
         QtWidgets.QSystemTrayIcon.__init__(self, icon, parent)
@@ -22,29 +25,41 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
             QtCore.QCoreApplication.exit()
         elif "trace on; debug on." in t:
             ctl.configure_php_ini(1, 1)
+            self.setIcon(ico_waiting)
             ctl.restart_apache()
+            self.setIcon(ico_default)
         elif "trace on; debug off." in t:
             ctl.configure_php_ini(1, 0)
+            self.setIcon(ico_waiting)
             ctl.restart_apache()
+            self.setIcon(ico_default)
         elif "trace off; debug on." in t:
             ctl.configure_php_ini(0, 1)
+            self.setIcon(ico_waiting)
             ctl.restart_apache()
+            self.setIcon(ico_default)
         elif "everything off" in t:
             ctl.configure_php_ini(0, 0)
+            self.setIcon(ico_waiting)
             ctl.restart_apache()
+            self.setIcon(ico_default)
         elif "restart apache" in t:
+            self.setIcon(ico_waiting)
             ctl.restart_apache()
+            self.setIcon(ico_default)
 
 
 
-def main(image):
+def main():
+    global ico_default, ico_waiting
     app = QtWidgets.QApplication(sys.argv)
+    ico_default = QtGui.QIcon('icon.ico')
+    ico_waiting = QtGui.QIcon('icon-wating.ico')
     w = QtWidgets.QWidget()
-    trayIcon = SystemTrayIcon(QtGui.QIcon(image), w)
+    trayIcon = SystemTrayIcon(ico_default, w)
     trayIcon.show()
     sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
-    on='icon.ico'
-    main(on)
+    main()
