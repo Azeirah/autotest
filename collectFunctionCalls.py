@@ -299,6 +299,24 @@ def insert_request_in_db(conn, requests, uid, autoRemove=False):
         if autoRemove:
             remove_request_files(request)
 
+def file_is_available(filename):
+    """
+    Checks if a file is in use by another process
+    https://stackoverflow.com/a/37256114/2302759
+
+    The SO thread also includes solutions for Linux.
+    """
+    if not sys.platform == "win32":
+        raise Exception("`check_if_file_is_available` is only implemented for Windows, the program will not work correctly on other operating systems.")
+
+    if os.path.exists(filename):
+        try:
+            os.rename(filename, filename)
+            return True
+        except OSError as e:
+            return False
+    return False
+
 def get_unique_requests_from_folder(traceDir):
     """id > profile/trace > []"""
     requestFiles = [parse_request_filename(tp) for tp in os.listdir(traceDir)]
@@ -308,6 +326,9 @@ def get_unique_requests_from_folder(traceDir):
 
     for request in requestFiles:
         request["path"] = os.path.join(traceDir, request['filename'])
+        if not file_is_available(request["path"]):
+            continue
+
         if request["request_id"] not in requests:
             requests[request["request_id"]] = {}
 
