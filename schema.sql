@@ -17,7 +17,10 @@ ON `file_names`(`name`);
 
 
 CREATE TABLE IF NOT EXISTS `value_types`
-(`php_type` TEXT);
+(
+    `php_type` TEXT,
+    PRIMARY KEY(`php_type`)
+);
 INSERT OR IGNORE INTO `value_types` (`php_type`) VALUES
 ('null'),
 ('boolean'),
