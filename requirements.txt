@@ -1,2 +1,5 @@
 APScheduler
 PyQt5
+numpy
+scipy
+pandas
