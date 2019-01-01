@@ -376,4 +376,4 @@ if __name__ == '__main__':
         sched.start()
         sched.shutdown()
     else:
-        run(args)
+        run(args.db, args.nodb, args.request, args.autoRemove, args.autoImport)
