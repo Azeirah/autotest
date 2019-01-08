@@ -72,6 +72,8 @@ CREATE TABLE IF NOT EXISTS `function_invocations`
 );
 CREATE INDEX IF NOT EXISTS `idx_function_invocation_name`
 ON `function_invocations`(`name`);
+CREATE INDEX IF NOT EXISTS `idx_function_invocation_requestname`
+ON `function_invocations`(`requestname`);
 
 
 -- each function invocation has an associated set
