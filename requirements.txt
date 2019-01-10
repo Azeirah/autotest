@@ -1,2 +1,4 @@
 APScheduler
 PyQt5
+flask
+flask-cors
