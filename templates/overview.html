@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Overview</title>
+    <style>
+        html, document, body {
+            padding: 0;
+            margin: 0;
+        }
+
+        iframe {
+            box-sizing: content;
+            width: 49vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        {% if request_hash %}
+            <h1><a href="/overview">Overview</a> for request {{ request_hash }}</h1>
+            <iframe src="/sqlColumnsInRequest/{{ request_hash }}" frameborder="0"></iframe>
+            <iframe src="/queryLinks/{{ request_hash }}" frameborder="0"></iframe>
+        {% else %}
+            <h1><a href="/overview">Overview for all hashes</a></h1>
+            {% for hash, timestamp in request_hashes %}
+                {{ timestamp }} - <a href="/overview/{{ hash }}">{{ hash }}</a>
+                <br/>
+            {% endfor %}
+        {% endif %}
+    </div>
+</body>
+</html>

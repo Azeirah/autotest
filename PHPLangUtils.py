@@ -53,7 +53,7 @@ def infer_type(value):
     # remove very costly class definition
     # this does mean we'll lose some information
     # about the class instance variables, however.
-    if inferred_type == PHP_TYPE_OBJECT:
-        value = value.split('{')[0]
+    # if inferred_type == PHP_TYPE_OBJECT:
+    #     value = value.split('{')[0]
 
     return php_typed_value(value=value, php_type=inferred_type)
