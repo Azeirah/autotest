@@ -64,24 +64,61 @@ This is a simple command-line-interface to introspect php trace files. Like the 
 ### TODO
 
 * [x] Organize test-cases for the trace and profile parser
-* [ ] Add a convenient way to automatically turn capturing on and off with one accessible command
-* [ ] Add a "watch" command
+* [x] Add a convenient way to automatically turn capturing on and off with one accessible command
+* [x] Add a "watch" command
 * [x] Work on reducing database size
   * [x] Minimize filename redunancy by creating a `files` table
   * [x] (I know that db size is _very_ optimizable, standard zipping takes from 3.2GB to 140MB, 7z ultra from 3.2GB to _43MB_, compression ratio of 74x!)
 * [x] Normalize parameters
   * [x] Add a `params` or even `values` table
   * [x] 1-to-many for `function_call` to `params`
-* [ ] Add more diagnostics to the insights
-    * [ ] Memory usage per function call
-    * [ ] Time per function call
-* [ ] Add way to deal with the huge class {} data structures, they take up most of the space..
-    * [ ] Reduce them to their name only?
-    * [ ]
-* [ ] Add type column to the `values` table for all PHP types.
+* [x] Add more diagnostics to the insights
+    * [x] Memory usage per function call
+    * [x] Time per function call
+* [x] Add type column to the `values` table for all PHP types.
 * [ ] Higher level diagnostics
     * [ ] Parameter type inference
     * [ ] ...?
+
+### Goals
+
+This is mostly a research project, though the goal is to provide real-world value in a (php) work environment.
+
+This research started as a way to ask and answer one question:
+
+During programming, after changing a function, "did I break something", "did I introduce a breaking change?".
+
+The standard answer is "write tests", but I'm in an environment where tests are not allowed; so I had to improvise (innovation stems from necessity!)
+
+This tool is based on a single, important insight: Code that runs, is code that works. If you, the developer, log-in to your webapplication, and the login authentication was succesful, then you've implicitly written a test-case. Unfortunately, this information is lost.
+
+By recording program execution traces, you can record information about function calls, and therefore, preserve these otherwise lost implicit tests. Hence, the name "autotest".
+
+However, over time, it became clear that you can do much more than just aid the developer in finding regressions, and with the information captured, the goal is to provide the IDE with the data/information it needs to provide the developer with answer to her questions, which would otherwise need to be gathered manually.
+
+
+#### Questions
+
+While programming, an interesting way to frame the interaction between you (dev), the output (web-browser/application) and the IDE you use, is "asking the IDE questions".
+
+For instance, while programming
+
+"Who calls this function?"
+"Who does this function call?"
+"How many variables are in this function?"
+"..."
+
+The purpose of the IDE, within this framing, is to make (1) help you ask the right questions, (2) provide you with the best answer as quickly as possible whenever it is being asked for and (3) help you integrate your new insights into the code with as little effort as possible.
+
+Where IDE's fall short, however, is that there are many questions I ask of my code every single day, that the IDE has _no_ way of answering. Here are several examples, the IDE does provide _some_ answers to _some_ of these questions, but most involve a painful amount of manual effort.
+
+"Did the function I'm currently looking at run before?"
+"In an if/else statement, has this branch ever been executed?"
+"Is this function fast or slow?"
+"Has this function ever thrown an exception in practice?"
+"Does this function consume a lot of memory?"
+
+
 
 
 ### Relevant documentation
