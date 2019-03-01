@@ -4,6 +4,8 @@
 Given a parsed PHP trace (PHPTraceParser.py@Trace)
 This file will parse all function calls, with their parameters and their respective return values.
 """
+from wsEventServer import start_server
+import asyncio
 
 import argparse
 import sqlite3
@@ -340,7 +342,7 @@ def get_unique_requests_from_folder(traceDir):
     return requests
 
 
-def run(db, nodb, request, autoRemove, autoImport):
+def run(db, nodb, request, autoRemove, autoImport, evt_queue, evt_loop):
     db_name = db
 
     if nodb:
@@ -362,17 +364,21 @@ def run(db, nodb, request, autoRemove, autoImport):
                     print("Error while processing, moving on to the next")
                     traceback.print_exc()
                 print("Done processing request --{}--\n".format(uid))
+                asyncio.run_coroutine_threadsafe(evt_queue.put({'uid': uid}), evt_loop)
 
 
 if __name__ == '__main__':
     os.chdir(os.path.split(__file__)[0])
+
+    evt_loop = asyncio.get_event_loop()
+    evt_queue = start_server(evt_loop)
 
     args = parser.parse_args()
 
     if args.watch:
         print("Watching for changes.")
         sched = BlockingScheduler()
-        sched.add_job(run, 'interval', seconds=1, args=(args.db, args.nodb, args.request, args.autoRemove, args.autoImport), max_instances=1)
+        sched.add_job(run, 'interval', seconds=1, args=(args.db, args.nodb, args.request, args.autoRemove, args.autoImport, evt_queue, evt_loop), max_instances=1)
         sched.start()
         sched.shutdown()
     else:
