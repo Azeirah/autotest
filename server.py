@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 import sqlite3
 import settings
@@ -28,11 +28,13 @@ def get_paths_for_text_in_trace(conn, requestHash, text):
            LEFT JOIN "values" v on parameter.value_id = v.rowid
            LEFT JOIN "values" v2 on f.returnval = v2.rowid
     WHERE f.requestname=:requestHash
-    GROUP BY f.hash HAVING (params LIKE '%DAF Tru%' OR returnval LIKE '%DAF Tru%')
+    GROUP BY f.hash HAVING (params LIKE ('%' || :text || '%') OR returnval LIKE ('%' || :text || '%'))
     """
 
+
+
     c = conn.cursor()
-    c.execute(query, { 'requestHash': requestHash })
+    c.execute(query, { 'requestHash': requestHash, 'text': text })
 
     paths = c.fetchall()
 
@@ -54,7 +56,7 @@ CORS(app)
 @app.route("/queryLinks/<requestHash>")
 def queryLinks(requestHash):
     conn = sqlite3.connect('function-calls.db')
-    paths = get_paths_for_text_in_trace(conn, requestHash, "TODO")
+    paths = get_paths_for_text_in_trace(conn, requestHash, request.args.get('text'))
 
     return paths
 
@@ -72,12 +74,16 @@ def sqlColumnsInRequest(requestHash):
       f2.name,
       v.value,
       f3.name,
-      f.linenum
+      f.linenum,
+      m.value,
+      t.value
     FROM function_invocations f
         LEFT JOIN function_names f2 ON f.name = f2.rowid
         LEFT JOIN invocation_parameters parameter on parameter.function_invocation_hash = f.hash
         LEFT JOIN "values" v on parameter.value_id = v.rowid
         LEFT JOIN file_names f3 on f.calling_filename = f3.rowid
+        LEFT JOIN `values` m on f.memory=m.rowid
+        LEFT JOIN `values` t on f.time=t.rowid
     WHERE f.requestname = :requestHash
       AND (f2.name = 'mysqli_query'
       OR f2.name = 'createQuery'
@@ -106,6 +112,8 @@ def sqlColumnsInRequest(requestHash):
     for p in sqlCalls:
         fn = p[0]
         linenum = p[3]
+        memory = p[4]
+        time = p[5]
         filepath = p[2].replace('\\', '/')
         filename = filepath.split('/')[-1]
         url = "phpstorm://open?url=file://{filename}&line={linenum}".format(filename=filepath, linenum=linenum)
@@ -140,7 +148,13 @@ def sqlColumnsInRequest(requestHash):
         print("-"*80)
 
         content += "<div>"
-        content += "<a href='{url}'>{function}@{filename}:{linenum}</a><br />".format(url=url, function=fn, filename=filename, linenum=linenum)
+        content += "<a href='{url}'>{function}@{filename}:{linenum}</a> -- time: <b>{time:.5f}</b> -- memory: <b>{memory}</b><br />".format(
+            url=url,
+            function=fn,
+            filename=filename,
+            linenum=linenum,
+            memory=memory,
+            time=float(time))
         content += "<code>{query}</code>".format(query=htmlQuery)
         content += "</div>"
         content += "<br/>"
