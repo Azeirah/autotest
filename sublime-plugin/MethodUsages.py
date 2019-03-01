@@ -107,21 +107,17 @@ class ArityProperty(ComputedProperty):
 
         counts = Counter(arities)
 
-        print(counts)
-
         # split
         # substr
         # __constructor
         #
 
         if len(counts) == 0:
-            print("...0")
             value = "void <var class='certainty'>({samples})</var>".format(samples=num_samples)
         else:
             if len(counts) == 1:
                 value = "{v} <var class='certainty'>({samples})</var>".format(samples=num_samples, v=list(counts.keys())[0])
             else:
-                print("...2")
                 value = "<i>varying</i>"
                 for k, v in counts.items():
                     value += "<br /><code class='invisible'>....</code>{k}: {v}".format(k=k, v=v)
@@ -155,7 +151,7 @@ class ReturnTypeProperty(ComputedProperty):
         if len(types) == 1:
             return types[0][0]
         else:
-            return "<" + " | ".join([t[0] for t in types]) + ">"
+            return "&lt;" + " | ".join([t[0] for t in types]) + "&gt;"
 
         return types
 
