@@ -5,7 +5,7 @@ import settings
 import sqlparse
 
 def get_requests():
-    conn = sqlite3.connect('function-calls.db')
+    conn = sqlite3.connect('R:/Temp/function-calls.db')
 
     query = """SELECT requestname, strftime('%d-%m %H:%M:%S', timestamp) FROM traces ORDER BY timestamp DESC"""
 
