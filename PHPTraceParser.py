@@ -34,13 +34,13 @@ def indent_level(level):
 
 def call_tree(trace):
     for field, i in trace.visit(filter_entry):
-        print(indent_level(field.level), i, "{0}:{1}@{2}".format(field.filename.stem, field.line_number, get_fn_name(field.function_name)))
+        print(indent_level(field.level), i, "{0}:{1}@{2}".format(field.filename.stem, field.line_number, field.function_name))
 
 
 def function_names(trace):
     functions = set()
     for field, i in trace.visit(filter_entry):
-        functions.add((get_fn_name(field.function_name) + "\t" + field.definition_filename, ))
+        functions.add((field.function_name + "\t" + field.definition_filename, ))
         # print(indent_level(field.level), i, get_fn_name(field.function_name))
 
     return functions
@@ -53,7 +53,7 @@ def function_calls(trace):
     for field, i in trace.visit(lambda f: filter_entry(f) or filter_return(f)):
         if filter_entry(field):
             _currentCall = {
-                'name': get_fn_name(field.function_name),
+                'name': field.function_name,
                 'parameters': field.params,
             }
             stack.append(_currentCall)
@@ -77,7 +77,7 @@ def ordered_function_calls(trace):
     for field, i in trace.visit(lambda _: True):
         if filter_entry(field):
             calls[field.function_num] = {
-                'name': get_fn_name(field.function_name),
+                'name': field.function_name,
                 'parameters': field.params,
                 'calling_filename': str(field.filename),
                 'definition_filename': str(field.definition_filename),
@@ -118,7 +118,7 @@ def grouped_function_calls(trace):
     for field, i in trace.visit(lambda f: filter_entry(f) or filter_return(f)):
         if filter_entry(field):
             _currentCall = {
-                'name': get_fn_name(field.function_name),
+                'name': field.function_name,
                 'parameters': field.params,
                 'calling_filename': str(field.filename),
                 'definition_filename': str(field.definition_filename),
