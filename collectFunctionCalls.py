@@ -7,6 +7,7 @@ This file will parse all function calls, with their parameters and their respect
 from wsEventServer import start_server
 import asyncio
 
+import logging
 import argparse
 import sqlite3
 import os
@@ -29,6 +30,9 @@ import PHPTraceParser
 import PHPTraceTokenizer
 import PHPProfileParser
 from settings import traceDir
+
+logging.getLogger('apscheduler').setLevel(logging.CRITICAL)
+
 
 SCHEMA_PATH = "schema.sql"
 
