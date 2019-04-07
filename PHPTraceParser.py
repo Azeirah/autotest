@@ -62,8 +62,11 @@ def function_calls(trace):
             _currentCall = stack.pop()
             _currentCall['return'] = field.return_value
 
-    # main is recorded as a function call
-    calls[0]['return'] = ''
+    try:
+        # main is recorded as a function call
+        calls[0]['return'] = PHP_INST_VOID
+    except KeyError:
+        pass
 
     return calls
 
@@ -99,7 +102,11 @@ def ordered_function_calls(trace):
 
             calls[field.function_num]['return'] = retval
 
-    calls[0]['return'] = PHP_INST_VOID
+    try:
+        # main is recorded as a function call
+        calls[0]['return'] = PHP_INST_VOID
+    except KeyError:
+        pass
 
     return calls.values()
 
