@@ -328,16 +328,40 @@ def get_unique_requests_from_folder(traceDir):
 
     for request in requestFiles:
         request["path"] = os.path.join(traceDir, request['filename'])
-        if not file_is_available(request["path"]):
-            continue
 
         if request["request_id"] not in requests:
-            requests[request["request_id"]] = {}
+            if not file_is_available(request["path"]):
+                # don't allow this trace-id to be processed at all
+                # consider this scenario
+                # there are four files
+                # each have the same request-id (this happens for instance with exception handling)
+                # the second set of .xt and .xp files are released by apache
+                # the first two aren't
+                #
+                # the second relies on the first, and therefore we can't process
+                # the request yet.
+                # This request should be ignored. The requests get cleaned up later in this function
+                requests[request["request_id"]] = None
+                print("Request {id} exists, but one or more files are not yet released by apache".format(id=request["request_id"]))
+                continue
+            else:
+                requests[request["request_id"]] = {}
 
-        if request["type"] in requests[request["request_id"]]:
-            requests[request["request_id"]][request["type"]].append(request)
+        request_id = request["request_id"]
+        request_type = request["type"]
+
+        if requests[request_id] == None:
+            continue
         else:
-            requests[request["request_id"]][request["type"]] = [request]
+            if request_type in requests[request_id]:
+                requests[request_id][request_type].append(request)
+            else:
+                requests[request_id][request_type] = [request]
+
+    # clean up unready requests
+    unready_keys = [key for key in requests.keys() if requests[key] == None]
+    for unready_key in unready_keys:
+        del requests[unready_key]
 
     return requests
 
